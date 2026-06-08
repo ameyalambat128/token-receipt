@@ -10,7 +10,8 @@ Primary surfaces:
 - `packages/core`: log parsing, heuristics, analysis, share text
 - `packages/render`: receipt SVG and PNG rendering
 - `packages/runtime`: CLI and compiled standalone runtime
-- `packages/skills`: Codex and Claude Code skill wrappers
+- `skills/token-receipt`: canonical marketplace skill package
+- `packages/skills`: local install and validation helpers
 - `docs/`: launch, share, and install docs
 
 ## Commands

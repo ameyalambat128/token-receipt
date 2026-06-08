@@ -33,7 +33,7 @@ export function renderReceiptSvg(receipt: Receipt) {
       <text x="64" y="${404 + receipt.lines.length * lineHeight}" font-size="18" fill="#5d5d5d">${escapeXml(receipt.disclaimer)}</text>
       <line x1="44" x2="856" y1="${454 + receipt.lines.length * lineHeight}" y2="${454 + receipt.lines.length * lineHeight}" stroke="#d8d0c1" stroke-width="1" stroke-dasharray="4 8"/>
       <text x="450" y="${520 + receipt.lines.length * lineHeight}" text-anchor="middle" font-size="28" fill="#333">${escapeXml(receipt.footer)}</text>
-      <text x="450" y="${558 + receipt.lines.length * lineHeight}" text-anchor="middle" font-size="18" fill="#5d5d5d">Generate yours: bun run skill:install</text>
+      <text x="450" y="${558 + receipt.lines.length * lineHeight}" text-anchor="middle" font-size="18" fill="#5d5d5d">Generate yours: skills.sh/ameyalambat128/token-receipt</text>
     </svg>
   `.trim();
 }

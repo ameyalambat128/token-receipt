@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 OUT_DIR="${PWD}/token-receipt-output"
 INSTALLER="$SCRIPT_DIR/install-runtime.sh"
 FORCE_UPDATE=0
@@ -19,8 +19,9 @@ while (($#)); do
   shift
 done
 
-LOCAL_RUNTIME_ENTRY="$(cd "$SCRIPT_DIR/../../../../.." && pwd)/packages/runtime/src/cli.ts"
-LOCAL_RUNTIME_DIR="$(cd "$SCRIPT_DIR/../../../../.." && pwd)/packages/runtime"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd -P)"
+LOCAL_RUNTIME_ENTRY="$REPO_ROOT/packages/runtime/src/cli.ts"
+LOCAL_RUNTIME_DIR="$REPO_ROOT/packages/runtime"
 
 run_local_runtime() {
   bun --cwd "$LOCAL_RUNTIME_DIR" ./src/cli.ts generate --out "$OUT_DIR" "${PASSTHROUGH_ARGS[@]}"

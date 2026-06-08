@@ -89,7 +89,9 @@ function Divider() {
 }
 
 export default function Home() {
-  const installCommand = "bun install && bun run skill:install";
+  const installCommand =
+    "npx skills add ameyalambat128/token-receipt --skill token-receipt";
+  const repoInstallCommand = "bun install && bun run skill:install";
   const codexPrompt =
     "$token-receipt Generate a satirical receipt for my last 30 days of agent usage.";
   const claudePrompt =
@@ -141,6 +143,16 @@ export default function Home() {
                 {installCommand}
               </div>
               <CopyButton text={installCommand} />
+            </div>
+            <p className="mb-3 mt-4 font-sans text-xs text-gray-500">
+              Repo-local development install
+            </p>
+            <div className="flex items-center justify-between gap-4">
+              <div className="overflow-x-auto text-gray-400">
+                <span className="select-none text-gray-600">$ </span>
+                {repoInstallCommand}
+              </div>
+              <CopyButton text={repoInstallCommand} />
             </div>
             <p className="mb-3 mt-4 font-sans text-xs text-gray-500">
               Runtime doctor

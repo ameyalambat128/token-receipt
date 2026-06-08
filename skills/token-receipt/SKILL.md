@@ -1,27 +1,30 @@
 ---
 name: token-receipt
 description: Generate a satirical AI bill from recent Codex and Claude Code logs. Use when the user asks for a token receipt, AI bill, satire receipt, or shareable roast of their agent usage.
+metadata:
+  openclaw:
+    os: ["darwin"]
 ---
 
 # token-receipt
 
 ## What this is
 
-A local skill that ensures the Token Receipt macOS runtime is installed, produces a thermal-paper PNG plus share files, and then uses those structured facts to help you write the final roast.
+A packaged local skill that ensures the Token Receipt macOS runtime is installed, produces a thermal-paper PNG plus share files, and then uses those structured facts to help write the final roast.
 
 ## Setup check
 
-If `~/.codex/skills/token-receipt/scripts/generate.sh` does not exist, tell the user to run this from the repo root:
+If the bundled `scripts/generate.sh` helper is missing, tell the user to install the skill with:
 
 ```bash
-bun install && bun run skill:install
+npx skills add ameyalambat128/token-receipt --skill token-receipt
 ```
 
 On first run, the helper script downloads the standalone Token Receipt runtime into `~/Library/Application Support/token-receipt/bin/token-receipt`. Cached downloads go in `~/Library/Caches/token-receipt/`.
 
 ## How to use
 
-1. Run the helper script with the user's requested filters if they gave any. Default to `--since 30d`.
+1. Run the bundled helper script with the user's requested filters if they gave any. Default to `--since 30d`.
 2. Read `token-receipt-output/analysis.json`, `receipt.json`, `share/x.txt`, and `share/linkedin.txt`.
 3. Show the receipt image path and summarize the funniest defensible takeaways.
 4. If the user wants share copy, refine the generated caption text without inventing unsupported metrics.
@@ -31,15 +34,16 @@ On first run, the helper script downloads the standalone Token Receipt runtime i
 Default run:
 
 ```bash
-~/.codex/skills/token-receipt/scripts/generate.sh --since 30d
+scripts/generate.sh --since 30d
 ```
 
 Examples:
 
 ```bash
-~/.codex/skills/token-receipt/scripts/generate.sh --provider codex --since 7d
-~/.codex/skills/token-receipt/scripts/generate.sh --project whoop-am --since 30d
-~/.codex/skills/token-receipt/scripts/generate.sh --update-runtime --since 30d
+scripts/generate.sh --provider codex --since 7d
+scripts/generate.sh --provider claude --since 7d
+scripts/generate.sh --project whoop-am --since 30d
+scripts/generate.sh --update-runtime --since 30d
 ```
 
 ## Non-negotiables

@@ -31,10 +31,11 @@ CACHE_DIR="${TOKEN_RECEIPT_CACHE_DIR:-$HOME/Library/Caches/token-receipt}"
 BIN_DIR="$APP_SUPPORT_DIR/bin"
 BIN_PATH="${TOKEN_RECEIPT_RUNTIME_PATH:-$BIN_DIR/token-receipt}"
 INSTALL_JSON="$APP_SUPPORT_DIR/install.json"
-REPO="${TOKEN_RECEIPT_GITHUB_REPO:-ameya/token-receipt}"
+REPO="${TOKEN_RECEIPT_GITHUB_REPO:-ameyalambat128/token-receipt}"
 VERSION="${TOKEN_RECEIPT_VERSION:-latest}"
 ASSET_NAME="token-receipt-darwin-arm64.tar.gz"
 DOWNLOAD_URL="${TOKEN_RECEIPT_DOWNLOAD_URL:-}"
+CHECKSUM_URL="${TOKEN_RECEIPT_CHECKSUM_URL:-}"
 
 if [[ "$FORCE_UPDATE" -eq 0 && -x "$BIN_PATH" ]]; then
   printf '%s\n' "$BIN_PATH"
@@ -51,11 +52,24 @@ if [[ -z "$DOWNLOAD_URL" ]]; then
   fi
 fi
 
+if [[ -z "$CHECKSUM_URL" ]]; then
+  CHECKSUM_URL="${DOWNLOAD_URL}.sha256"
+fi
+
 TEMP_DIR="$(mktemp -d "$CACHE_DIR/install.XXXXXX")"
 ARCHIVE_PATH="$TEMP_DIR/$ASSET_NAME"
+CHECKSUM_PATH="$TEMP_DIR/${ASSET_NAME}.sha256"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 curl -fL "$DOWNLOAD_URL" -o "$ARCHIVE_PATH"
+
+if curl -fsL "$CHECKSUM_URL" -o "$CHECKSUM_PATH"; then
+  (
+    cd "$TEMP_DIR"
+    shasum -a 256 -c "$(basename "$CHECKSUM_PATH")" >/dev/null
+  )
+fi
+
 tar -xzf "$ARCHIVE_PATH" -C "$TEMP_DIR"
 
 EXTRACTED_DIR="$TEMP_DIR/token-receipt-darwin-arm64"

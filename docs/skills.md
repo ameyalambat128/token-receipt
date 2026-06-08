@@ -1,6 +1,16 @@
 # Skills
 
-## Install
+## Public install
+
+Recommended install via `skills.sh`:
+
+```bash
+npx skills add ameyalambat128/token-receipt --skill token-receipt
+```
+
+This installs the canonical skill package from `skills/token-receipt/`.
+
+## Repo-local install
 
 From the repo root:
 
@@ -11,23 +21,21 @@ bun run skill:install
 
 The installed skill bootstraps a standalone macOS arm64 runtime into `~/Library/Application Support/token-receipt/bin/token-receipt`. Download caches live in `~/Library/Caches/token-receipt/`.
 
-## Codex
+## Usage
 
-Invoke the skill from a thread and ask for a token receipt, or run:
+Codex:
 
 ```bash
 ~/.codex/skills/token-receipt/scripts/generate.sh --since 30d
 ```
 
-## Claude Code
-
-Ask Claude Code to use `token-receipt`, or run:
+Claude Code:
 
 ```bash
 ~/.claude/skills/token-receipt/scripts/generate.sh --since 30d
 ```
 
-To force a fresh runtime install:
+Force a fresh runtime install:
 
 ```bash
 ~/.codex/skills/token-receipt/scripts/generate.sh --update-runtime --since 30d
@@ -41,7 +49,21 @@ Build the macOS arm64 archive that the skill installer expects:
 bun run runtime:build:darwin-arm64
 ```
 
-This writes `packages/runtime/dist/token-receipt-darwin-arm64.tar.gz`.
+This writes:
+
+- `packages/runtime/dist/token-receipt-darwin-arm64.tar.gz`
+- `packages/runtime/dist/token-receipt-darwin-arm64.tar.gz.sha256`
+
+## GitHub Releases
+
+Push a semantic version tag to publish the release assets:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+The release workflow validates the workspace, builds the runtime, and uploads the archive plus checksum.
 
 ## Output
 

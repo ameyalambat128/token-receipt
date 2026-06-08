@@ -1,0 +1,7 @@
+{
+  "name": "token-receipt",
+  "display_name": "Token Receipt",
+  "version": "0.1.0",
+  "description": "Generate a satirical AI expense receipt from local Codex and Claude Code logs.",
+  "license": "MIT"
+}
