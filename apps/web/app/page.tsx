@@ -4,6 +4,7 @@ import Link from "next/link";
 import { GitHubStars } from "@/components/github-stars";
 import { CopyButton } from "@/components/copy-button";
 import { GitHubIcon, XIcon } from "@/components/icons";
+import { ProofStrip } from "@/components/proof-strip";
 import {
   Accordion,
   AccordionContent,
@@ -179,7 +180,8 @@ export default function Home() {
               token-receipt-output/
             </div>
           </div>
-          <p className="mt-3 text-sm text-gray-600">
+          <ProofStrip />
+          <p className="mt-4 text-sm text-gray-600">
             Local runtime plus local skills. The roast stays on your machine.
           </p>
           <p className="mt-2 text-sm text-gray-600">
