@@ -1,0 +1,31 @@
+{
+  "name": "token-receipt",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "token-receipt": "./src/cli.ts"
+  },
+  "exports": {
+    ".": "./src/cli.ts"
+  },
+  "scripts": {
+    "analyze": "bun ./src/cli.ts analyze",
+    "render": "bun ./src/cli.ts render",
+    "generate": "bun ./src/cli.ts generate",
+    "doctor": "bun ./src/cli.ts doctor",
+    "build:darwin-arm64": "bash ./scripts/build-darwin-arm64.sh",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "check": "tsc --noEmit",
+    "check-types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@token-receipt/core": "*",
+    "@token-receipt/render": "*"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "@types/node": "^22.15.3",
+    "typescript": "5.9.2"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "token-receipt-workspace",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "turbo run format && prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
+    "check": "turbo run check",
+    "check-types": "turbo run check-types",
+    "skill:install": "bash packages/skills/install.sh",
+    "runtime:build:darwin-arm64": "bun run -F token-receipt build:darwin-arm64"
+  },
+  "devDependencies": {
+    "prettier": "^3.7.4",
+    "turbo": "^2.9.16",
+    "typescript": "5.9.2"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "bun@1.3.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ]
+}

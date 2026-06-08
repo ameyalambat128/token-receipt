@@ -1,0 +1,11 @@
+{
+  "name": "@token-receipt/skills",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "format": "prettier --write \"**/*.{md,ts}\"",
+    "check": "bash ./check.sh",
+    "check-types": "bash ./check.sh"
+  }
+}
