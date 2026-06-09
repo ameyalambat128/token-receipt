@@ -2,226 +2,253 @@
 
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 
-const proofCards = [
-  {
-    title: "Released",
-    detail: "v0.1.0 live on GitHub Releases",
-    accent: "bg-emerald-400",
-  },
-  {
-    title: "Install path tested",
-    detail: "npx skills add ameyalambat128/token-receipt --skill token-receipt",
-    accent: "bg-sky-400",
-  },
-  {
-    title: "Local smoke test passed",
-    detail: "Installed skill generated receipt.png, x.txt, and linkedin.txt",
-    accent: "bg-amber-300",
-  },
+const receiptRows = [
+  { qty: "01", item: "Context window emotional support", amount: "$2,488" },
+  { qty: "02", item: "MCP tool tourism", amount: "$941" },
+  { qty: "03", item: "Repeated shell confidence loops", amount: "$422" },
+  { qty: "04", item: "Docs tab multiplication", amount: "$203" },
+  { qty: "05", item: "One more quick refactor", amount: "$96" },
+  { qty: "06", item: "Agent handoff drama", amount: "$58" },
 ];
 
-const sampleLines = [
-  "Context window emotional support",
-  "MCP tool tourism",
-  "Repeated shell confidence loops",
+const statRows = [
+  { label: "Prompt count", value: "184" },
+  { label: "Tool calls", value: "612" },
+  { label: "Tokens burned", value: "1.92M" },
+  { label: "Peak spiral", value: "2:14 AM" },
 ];
+
+const activityGraph = [
+  [0, 0, 0, 1, 0, 0, 0],
+  [0, 1, 0, 2, 0, 0, 0],
+  [0, 0, 0, 1, 0, 0, 0],
+  [0, 0, 2, 3, 1, 0, 0],
+  [0, 1, 3, 2, 1, 0, 0],
+  [0, 0, 0, 2, 0, 0, 0],
+  [0, 0, 1, 0, 0, 0, 0],
+  [0, 2, 3, 3, 2, 0, 0],
+  [0, 1, 2, 4, 1, 0, 0],
+  [0, 1, 3, 2, 2, 1, 0],
+  [0, 0, 2, 2, 3, 1, 0],
+  [1, 2, 2, 3, 2, 1, 0],
+  [0, 1, 3, 2, 2, 0, 0],
+  [0, 0, 2, 4, 2, 1, 0],
+  [1, 2, 2, 3, 1, 1, 0],
+  [0, 1, 3, 2, 1, 0, 0],
+];
+
+const activityCellOpacity = ["0.14", "0.34", "0.52", "0.74", "0.96"];
 
 export function ProofStrip() {
   const prefersReducedMotion = useReducedMotion();
 
-  const containerVariants: Variants = prefersReducedMotion
+  const sectionVariants: Variants = prefersReducedMotion
     ? {
         hidden: { opacity: 0 },
-        visible: {
-          opacity: 1,
-          transition: { duration: 0.16 },
-        },
+        visible: { opacity: 1, transition: { duration: 0.16 } },
       }
     : {
-        hidden: { opacity: 0, y: 18 },
+        hidden: { opacity: 0, y: 24 },
         visible: {
           opacity: 1,
           y: 0,
           transition: {
-            duration: 0.48,
+            duration: 0.52,
             ease: [0.16, 1, 0.3, 1],
-            staggerChildren: 0.09,
+            staggerChildren: 0.08,
           },
         },
       };
 
-  const cardVariants: Variants = prefersReducedMotion
+  const itemVariants: Variants = prefersReducedMotion
     ? {
         hidden: { opacity: 0 },
         visible: { opacity: 1, transition: { duration: 0.12 } },
       }
     : {
-        hidden: { opacity: 0, y: 16, filter: "blur(8px)" },
+        hidden: { opacity: 0, y: 14, filter: "blur(6px)" },
         visible: {
           opacity: 1,
           y: 0,
           filter: "blur(0px)",
-          transition: { duration: 0.38, ease: [0.16, 1, 0.3, 1] },
+          transition: { duration: 0.34, ease: [0.16, 1, 0.3, 1] },
         },
-      };
-
-  const lineVariants: Variants = prefersReducedMotion
-    ? {
-        hidden: { opacity: 0 },
-        visible: { opacity: 1, transition: { duration: 0.08 } },
-      }
-    : {
-        hidden: { opacity: 0, x: -12 },
-        visible: {
-          opacity: 1,
-          x: 0,
-          transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] },
-        },
-      };
-
-  const shimmerTransition = prefersReducedMotion
-    ? undefined
-    : {
-        duration: 2.8,
-        ease: "linear" as const,
-        repeat: Number.POSITIVE_INFINITY,
       };
 
   return (
     <motion.section
-      className="mt-6"
+      className="mt-8"
       initial="hidden"
       whileInView="visible"
-      viewport={{ once: true, amount: 0.35 }}
-      variants={containerVariants}
-      aria-label="Release and test proof"
+      viewport={{ once: true, amount: 0.25 }}
+      variants={sectionVariants}
+      aria-label="Example receipt"
     >
-      <div className="mb-3 flex items-center justify-between gap-3">
+      <motion.div variants={itemVariants} className="mb-4">
         <p className="text-[11px] uppercase tracking-[0.28em] text-neutral-500">
-          Shipped and tested
+          Example output
         </p>
-        <div className="h-px flex-1 bg-neutral-800" />
-      </div>
+      </motion.div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.95fr]">
-        <div className="grid gap-3 sm:grid-cols-3">
-          {proofCards.map((card) => (
-            <motion.div
-              key={card.title}
-              variants={cardVariants}
-              whileHover={
-                prefersReducedMotion
-                  ? undefined
-                  : {
-                      y: -4,
-                      borderColor: "rgba(245, 245, 245, 0.18)",
-                      boxShadow: "0 18px 40px rgba(0, 0, 0, 0.18)",
-                    }
-              }
-              className="rounded-2xl border border-neutral-800 bg-neutral-950/75 p-4 ring-1 ring-neutral-900 transition-colors"
-            >
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/90 px-2.5 py-1">
-                <span className={`h-2 w-2 rounded-full ${card.accent}`} />
-                <span className="text-[11px] uppercase tracking-[0.22em] text-neutral-400">
-                  {card.title}
-                </span>
-              </div>
-              <p className="font-mono text-[13px] leading-6 text-neutral-300">
-                {card.detail}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+      <motion.div
+        variants={itemVariants}
+        className="relative mx-auto w-full max-w-[34rem] px-2 sm:px-0"
+      >
+        <div className="pointer-events-none absolute inset-x-8 top-5 h-24 rounded-full bg-white/8 blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-10 -bottom-6 h-16 rounded-full bg-black/35 blur-2xl" />
 
         <motion.div
-          variants={cardVariants}
           whileHover={
             prefersReducedMotion
               ? undefined
               : {
-                  y: -5,
-                  rotate: -0.2,
-                  boxShadow: "0 22px 50px rgba(40, 28, 15, 0.22)",
+                  y: -8,
+                  rotate: -1.2,
+                  transition: { duration: 0.24, ease: [0.16, 1, 0.3, 1] },
                 }
           }
-          className="relative overflow-hidden rounded-[28px] border border-[#d5c8b3] bg-[#f3eadc] p-5 text-[#2a241d] shadow-[0_20px_50px_rgba(15,15,15,0.22)]"
+          className="relative overflow-hidden rounded-[2rem] border border-stone-300/70 bg-[#f5f1e8] px-4 pb-8 pt-7 text-[#1f1b17] shadow-[0_30px_80px_rgba(0,0,0,0.28)] sm:px-6"
+          style={{
+            backgroundImage: [
+              "linear-gradient(180deg, rgba(255,252,247,0.9), rgba(245,239,231,0.8))",
+              "linear-gradient(180deg, rgba(255,255,255,0.18), transparent 18%, rgba(120,106,89,0.06) 84%, rgba(255,255,255,0.1))",
+              "url('/wrinkled-paper-texture-7.jpg')",
+            ].join(", "),
+            backgroundBlendMode: "screen, multiply, normal",
+            backgroundPosition: "center, center, center",
+            backgroundSize: "cover, cover, cover",
+          }}
         >
-          <motion.div
-            aria-hidden="true"
-            className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/2 bg-gradient-to-r from-transparent via-white/40 to-transparent"
-            animate={prefersReducedMotion ? undefined : { x: ["-10%", "180%"] }}
-            transition={shimmerTransition}
-          />
+          <div className="pointer-events-none absolute inset-0 opacity-45 mix-blend-soft-light">
+            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.42),transparent_32%,rgba(113,95,74,0.08)_66%,rgba(255,255,255,0.22))]" />
+            <div className="absolute left-[12%] top-[18%] h-40 w-40 rounded-full bg-white/30 blur-3xl" />
+            <div className="absolute right-[10%] top-[30%] h-44 w-44 rounded-full bg-stone-300/30 blur-3xl" />
+          </div>
 
-          <div className="relative z-10">
-            <div className="mb-5 flex items-start justify-between gap-4">
-              <div>
-                <p className="text-[10px] uppercase tracking-[0.28em] text-[#7a6d5f]">
-                  Sample receipt moment
-                </p>
-                <h3 className="mt-2 font-mono text-lg tracking-tight">
-                  Your monthly AI bill
-                </h3>
-                <p className="font-mono text-xs text-[#7a6d5f]">
-                  officially itemized
-                </p>
-              </div>
-              <div className="rounded-full border border-[#d5c8b3] bg-[#efe3d2] px-3 py-1 font-mono text-[11px] text-[#7a6d5f]">
-                fake but familiar
-              </div>
-            </div>
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-[radial-gradient(circle_at_10px_0px,transparent_0_8px,#f5f1e8_8.5px)] bg-[length:22px_16px] bg-repeat-x opacity-80" />
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 rotate-180 bg-[radial-gradient(circle_at_10px_0px,transparent_0_8px,#f5f1e8_8.5px)] bg-[length:22px_16px] bg-repeat-x opacity-80" />
 
-            <motion.div
-              className="space-y-3 border-y border-dashed border-[#d5c8b3] py-4"
-              variants={containerVariants}
-            >
-              {sampleLines.map((line, index) => (
-                <motion.div
-                  key={line}
-                  variants={lineVariants}
-                  transition={
-                    prefersReducedMotion
-                      ? undefined
-                      : {
-                          duration: 0.26,
-                          delay: 0.18 + index * 0.09,
-                          ease: [0.16, 1, 0.3, 1],
-                        }
-                  }
-                  className="flex items-center justify-between gap-3 font-mono text-[13px]"
-                >
-                  <span>{line}</span>
-                  <span className="text-[#8e453f]">
-                    ${["2,488", "941", "422"][index]}
-                  </span>
-                </motion.div>
-              ))}
+          <div className="relative z-10 font-mono">
+            <motion.div variants={itemVariants} className="text-center">
+              <p className="text-[2.45rem] font-semibold uppercase tracking-[-0.06em] sm:text-[2.55rem]">
+                TOKEN RECEIPT
+              </p>
+              <p className="mt-2 text-[0.92rem] uppercase tracking-[0.24em] text-stone-600 sm:text-[0.95rem]">
+                Last 30 Days
+              </p>
             </motion.div>
 
             <motion.div
-              variants={lineVariants}
-              transition={
-                prefersReducedMotion
-                  ? undefined
-                  : {
-                      duration: 0.3,
-                      delay: 0.46,
-                      ease: [0.16, 1, 0.3, 1],
-                    }
-              }
-              className="mt-4 flex items-end justify-between gap-4"
+              variants={itemVariants}
+              className="mt-8 space-y-1 text-[0.88rem] leading-6 sm:text-[0.95rem]"
             >
-              <div>
-                <p className="font-mono text-xs text-[#7a6d5f]">Total</p>
-                <p className="font-mono text-3xl tracking-tight">$4,208.17</p>
+              <p>ORDER #0001 FOR AMEYA</p>
+              <p>MONDAY, JUNE 8, 2026</p>
+            </motion.div>
+
+            <motion.div
+              variants={itemVariants}
+              className="mt-5 border-y border-dashed border-stone-500/70 py-2 text-[0.82rem] sm:text-[0.92rem]"
+            >
+              <div className="grid grid-cols-[2rem_minmax(0,1fr)_4.8rem] gap-3 sm:grid-cols-[2.6rem_minmax(0,1fr)_5.1rem]">
+                <span>QTY</span>
+                <span>ITEM</span>
+                <span className="text-right">AMT</span>
               </div>
-              <p className="max-w-[11rem] text-right font-mono text-[11px] leading-5 text-[#7a6d5f]">
-                satirical estimate based on local agent logs
+            </motion.div>
+
+            <div className="mt-2 space-y-2.5 text-[0.82rem] leading-6 sm:text-[0.92rem]">
+              {receiptRows.map((row) => (
+                <motion.div
+                  key={row.item}
+                  variants={itemVariants}
+                  className="grid grid-cols-[2rem_minmax(0,1fr)_4.8rem] gap-3 sm:grid-cols-[2.6rem_minmax(0,1fr)_5.1rem]"
+                >
+                  <span>{row.qty}</span>
+                  <span className="pr-2">{row.item}</span>
+                  <span className="text-right">{row.amount}</span>
+                </motion.div>
+              ))}
+            </div>
+
+            <motion.div
+              variants={itemVariants}
+              className="mt-5 border-y border-dashed border-stone-500/70 py-3 text-[0.82rem] leading-6 sm:text-[0.92rem]"
+            >
+              {statRows.map((row) => (
+                <div
+                  key={row.label}
+                  className="flex items-center justify-between gap-4"
+                >
+                  <span>{row.label}:</span>
+                  <span>{row.value}</span>
+                </div>
+              ))}
+              <div className="mt-2 flex items-center justify-between gap-4 text-[0.98rem] sm:text-[1.05rem]">
+                <span>TOTAL:</span>
+                <span>$4,208</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              variants={itemVariants}
+              className="mt-4 space-y-1 text-[0.82rem] leading-6 sm:text-[0.92rem]"
+            >
+              <p>CARD: **** **** **** 2026</p>
+              <p>AUTH CODE: 612184</p>
+              <p>CARDHOLDER: AMEYA</p>
+            </motion.div>
+
+            <motion.div variants={itemVariants} className="mt-8 text-center">
+              <p className="text-[1rem] uppercase tracking-[0.06em]">
+                THANK YOU FOR PROMPTING
+              </p>
+            </motion.div>
+
+            <motion.div
+              variants={itemVariants}
+              className="mx-auto mt-7 flex w-full max-w-[14.5rem] flex-col items-center px-1 sm:max-w-[16.5rem] sm:px-0"
+            >
+              <div className="mb-3 flex w-full items-center justify-between gap-3 text-[0.76rem] uppercase tracking-[0.2em] text-stone-700">
+                <span>Got Helped</span>
+                <span>Last 30d</span>
+              </div>
+              <div
+                className="flex items-end gap-[3px] sm:gap-[4px]"
+                aria-hidden="true"
+              >
+                {activityGraph.map((column, columnIndex) => (
+                  <div
+                    key={columnIndex}
+                    className="grid gap-[3px] sm:gap-[4px]"
+                  >
+                    {column.map((value, rowIndex) => (
+                      <span
+                        key={`${columnIndex}-${rowIndex}`}
+                        className="block h-[8px] w-[8px] rounded-[2px] bg-black sm:h-[10px] sm:w-[10px]"
+                        style={{ opacity: activityCellOpacity[value] }}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 flex w-full items-center justify-between text-[0.72rem] uppercase tracking-[0.18em] text-stone-500">
+                <span>May</span>
+                <span>Jun</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              variants={itemVariants}
+              className="mt-4 text-center text-[0.82rem] leading-5 text-stone-500"
+            >
+              <p className="uppercase tracking-[0.22em]">
+                sample agentic usage stats
               </p>
             </motion.div>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </motion.section>
   );
 }
