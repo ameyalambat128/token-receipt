@@ -14,7 +14,7 @@ import {
 
 const siteUrl = "https://tokenreceipt.dev";
 const productDescription =
-  "Token Receipt turns your Codex and Claude Code logs into a satirical AI bill with a thermal-paper receipt, share-ready captions, and skill-native workflows.";
+  "Token Receipt turns your Codex and Claude Code logs into an AI bill with a thermal-paper receipt, share-ready captions, and skill-native workflows.";
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -63,7 +63,7 @@ const faqItems = [
     value: "providers",
     question: "Which agents does Token Receipt support first?",
     answer:
-      "V1 is built around Codex and Claude Code. It reads the local session logs those tools already write, normalizes usage and tool activity, and produces a satirical receipt plus share copy.",
+      "V1 is built around Codex and Claude Code. It reads the local session logs those tools already write, normalizes usage and tool activity, and produces a receipt plus share copy.",
   },
   {
     value: "privacy",
@@ -75,13 +75,13 @@ const faqItems = [
     value: "accuracy",
     question: "Is the receipt supposed to be financially accurate?",
     answer:
-      "It is grounded in real local token and tool signals, but the final bill is deliberately satirical. The output is labeled as a satirical estimate based on local agent logs.",
+      "It is grounded in real local token and tool signals, but it is still an interpretation of local agent activity rather than a billing ledger.",
   },
   {
     value: "share-loop",
     question: "What makes this shareable?",
     answer:
-      "Each run produces a thermal-paper PNG, an X caption, and a LinkedIn caption. The joke is personal because it is derived from your own agent habits, not from a generic meme generator.",
+      "Each run produces a thermal-paper PNG, an X caption, and a LinkedIn caption. The output feels personal because it is derived from your own agent habits, not from a generic meme generator.",
   },
 ];
 
@@ -94,7 +94,7 @@ export default function Home() {
     "npx skills add ameyalambat128/token-receipt --skill token-receipt";
   const repoInstallCommand = "bun install && bun run skill:install";
   const codexPrompt =
-    "$token-receipt Generate a satirical receipt for my last 30 days of agent usage.";
+    "$token-receipt Generate a receipt for my last 30 days of agent usage.";
   const claudePrompt =
     "Use token-receipt to itemize my last 30 days of Codex and Claude Code usage.";
   const doctorCommand = "bun run -F token-receipt doctor";
@@ -125,7 +125,7 @@ export default function Home() {
           </p>
 
           <p className="mt-6 leading-relaxed text-gray-400">
-            Token Receipt turns local agent logs into a satirical AI bill with a
+            Token Receipt turns local agent logs into an AI bill with a
             thermal-paper PNG, share-ready captions, and a skill-native flow
             that works inside the tools people already use.
           </p>
@@ -181,41 +181,6 @@ export default function Home() {
             </div>
           </div>
           <ProofStrip />
-          <p className="mt-4 text-sm text-gray-600">
-            Local runtime plus local skills. The roast stays on your machine.
-          </p>
-          <p className="mt-2 text-sm text-gray-600">
-            Works first with{" "}
-            <Link
-              href="https://openai.com/academy/codex-plugins-and-skills/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 underline hover:text-white"
-            >
-              Codex skills
-            </Link>{" "}
-            and{" "}
-            <Link
-              href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-400 underline hover:text-white"
-            >
-              Claude skills
-            </Link>
-            .
-          </p>
-
-          <div className="mt-4 flex gap-4">
-            <Link
-              href="https://github.com/ameyalambat128/token-receipt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-gray-400 transition-colors hover:text-white hover:underline"
-            >
-              View on GitHub
-            </Link>
-          </div>
         </header>
 
         <main className="space-y-12">
@@ -227,7 +192,7 @@ export default function Home() {
               Token Receipt ships a Codex skill that can be invoked from the
               thread with the exact workflow Codex already uses for skills. The
               skill calls the local runtime, reads the structured analysis, and
-              then lets Codex write the final roast in-session.
+              then lets Codex write the final response in-session.
             </p>
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-5 ring-1 ring-neutral-900">
               <p className="text-xs uppercase tracking-[0.22em] text-gray-500">
@@ -251,8 +216,8 @@ export default function Home() {
             <p className="mb-4 leading-relaxed text-gray-400">
               Claude Code gets the same skill-first flow: local parsing and
               image generation happen in the runtime, and Claude writes the
-              final satirical response using your existing session instead of a
-              separate API key.
+              final response using your existing session instead of a separate
+              API key.
             </p>
             <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-5 ring-1 ring-neutral-900">
               <p className="text-xs uppercase tracking-[0.22em] text-gray-500">
@@ -274,17 +239,17 @@ export default function Home() {
               What is Token Receipt?
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
-              Token Receipt is a personalized roast generator for coding agents.
+              Token Receipt is a receipt-style usage snapshot for coding agents.
             </p>
             <p className="mb-4 leading-relaxed text-gray-400">
               It reads the session logs that Codex and Claude Code already write
               locally, turns those into structured usage facts, and lays them
-              out like a ridiculous itemized bill.
+              out as an itemized bill.
             </p>
             <p className="mb-6 leading-relaxed text-gray-400">
-              The result feels personal because the joke is about your own
-              habits: repeated file reads, subagent sprawl, context bloat, and
-              every other expensive little ritual.
+              The result feels personal because it reflects your own habits:
+              repeated file reads, subagent sprawl, context bloat, and every
+              other expensive little ritual.
             </p>
             <ul className="list-inside list-disc space-y-1 text-gray-400">
               <li>Reads local logs from Codex and Claude Code</li>
@@ -308,7 +273,8 @@ export default function Home() {
               habit you already know you have.
             </p>
             <p className="leading-relaxed text-gray-400">
-              Real local signals make the joke feel earned instead of random.
+              Real local signals make the output feel specific instead of
+              generic.
             </p>
           </section>
 
@@ -338,8 +304,7 @@ export default function Home() {
               ))}
             </div>
             <p className="mt-6 text-sm text-gray-600">
-              Every bill is labeled as a satirical estimate based on local agent
-              logs.
+              Every bill is derived from local agent logs.
             </p>
           </section>
 
@@ -369,8 +334,8 @@ export default function Home() {
               <div className="flex gap-4">
                 <span className="font-mono text-gray-600">3.</span>
                 <p className="text-gray-400">
-                  The skill asks Codex or Claude Code to phrase the final roast
-                  using the session you are already paying for
+                  The skill asks Codex or Claude Code to phrase the final
+                  response using the session you are already paying for
                 </p>
               </div>
             </div>
@@ -387,13 +352,6 @@ export default function Home() {
             </h2>
             <ul className="list-inside list-disc space-y-1 text-gray-400">
               <li>People shipping with Codex or Claude Code every day</li>
-              <li>
-                Anyone who wants a screenshot-native joke for X or LinkedIn
-              </li>
-              <li>Teams that want a playful way to talk about agent waste</li>
-              <li>
-                Builders who prefer local tools over another SaaS dashboard
-              </li>
             </ul>
           </section>
 
@@ -403,16 +361,8 @@ export default function Home() {
             <h2 className="gradient-text mb-4 text-xl font-bold">
               Open source
             </h2>
-            <p className="mb-4 leading-relaxed text-gray-400">
-              Token Receipt is open source.
-            </p>
-            <p className="mb-4 leading-relaxed text-gray-400">
-              The parser, renderer, runtime, skill prompts, and launch docs live
-              in the repo. The runtime is the same engine the skills call.
-            </p>
             <p className="mb-6 leading-relaxed text-gray-400">
-              Share docs live under the root `docs/` folder as Markdown so the
-              launch language is versioned alongside the product.
+              MIT licensed and open source.
             </p>
             <div className="flex gap-4">
               <Link
