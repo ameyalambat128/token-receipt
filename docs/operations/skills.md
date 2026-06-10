@@ -74,3 +74,10 @@ Every run writes to `token-receipt-output/` in the current working directory:
 - `receipt.png`
 - `share/x.txt`
 - `share/linkedin.txt`
+
+When the skill is used inside Codex or Claude Code, the host agent should also persist:
+
+- `agentic-profile.json`
+- `agentic-profile.md`
+
+Those profile artifacts should be derived from `analysis.json`, not from raw log rereads.

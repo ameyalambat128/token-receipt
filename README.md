@@ -198,9 +198,12 @@ Release assets:
 
 ## Related docs
 
-- `docs/skills.md`
-- `docs/release.md`
-- `docs/x.md`
-- `docs/linkedin.md`
-- `docs/launch-checklist.md`
-- `docs/reply-bank.md`
+- `docs/OVERVIEW.md`
+- `docs/adr/001-local-first-receipt-first-direction.md`
+- `docs/product/agentic-development-receipt.md`
+- `docs/operations/skills.md`
+- `docs/operations/release.md`
+- `docs/marketing/x.md`
+- `docs/marketing/linkedin.md`
+- `docs/marketing/launch-checklist.md`
+- `docs/marketing/reply-bank.md`
