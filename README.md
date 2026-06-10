@@ -149,6 +149,11 @@ Every run writes to `token-receipt-output/` in the current working directory:
 - `share/x.txt`
 - `share/linkedin.txt`
 
+When run through the skill path, the host coding agent may also persist:
+
+- `agentic-profile.json`
+- `agentic-profile.md`
+
 ## Project structure
 
 ```text
