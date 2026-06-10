@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { GitHubStars } from "@/components/github-stars";
 import { CopyButton } from "@/components/copy-button";
+import { InstallCommandPanel } from "@/components/install-command-panel";
 import { GitHubIcon, XIcon } from "@/components/icons";
 import { ProofStrip } from "@/components/proof-strip";
 import {
@@ -100,6 +101,12 @@ export default function Home() {
   const doctorCommand = "bun run -F token-receipt doctor";
   const runtimeCommand =
     "bun run -F token-receipt generate -- --provider all --since 30d --out ./token-receipt-output";
+  const installItems = [
+    { label: "skill", command: installCommand },
+    { label: "repo", command: repoInstallCommand },
+    { label: "doctor", command: doctorCommand },
+    { label: "runtime", command: runtimeCommand },
+  ];
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -136,50 +143,7 @@ export default function Home() {
           <h2 className="gradient-text mb-4 mt-16 text-xl font-bold">
             Install Token Receipt
           </h2>
-          <div className="rounded-lg bg-neutral-900 px-5 py-4 font-mono text-sm ring-1 ring-neutral-800">
-            <p className="mb-3 font-sans text-xs text-gray-500">Recommended</p>
-            <div className="flex items-center justify-between gap-4">
-              <div className="overflow-x-auto text-gray-400">
-                <span className="select-none text-gray-600">$ </span>
-                {installCommand}
-              </div>
-              <CopyButton text={installCommand} />
-            </div>
-            <p className="mb-3 mt-4 font-sans text-xs text-gray-500">
-              Repo-local development install
-            </p>
-            <div className="flex items-center justify-between gap-4">
-              <div className="overflow-x-auto text-gray-400">
-                <span className="select-none text-gray-600">$ </span>
-                {repoInstallCommand}
-              </div>
-              <CopyButton text={repoInstallCommand} />
-            </div>
-            <p className="mb-3 mt-4 font-sans text-xs text-gray-500">
-              Runtime doctor
-            </p>
-            <div className="flex items-center justify-between gap-4">
-              <div className="overflow-x-auto text-gray-400">
-                <span className="select-none text-gray-600">$ </span>
-                {doctorCommand}
-              </div>
-              <CopyButton text={doctorCommand} />
-            </div>
-            <p className="mb-3 mt-4 font-sans text-xs text-gray-500">
-              Direct runtime fallback
-            </p>
-            <div className="flex items-center justify-between gap-4">
-              <div className="overflow-x-auto text-gray-400">
-                <span className="select-none text-gray-600">$ </span>
-                {runtimeCommand}
-              </div>
-              <CopyButton text={runtimeCommand} />
-            </div>
-            <div className="mt-4 border-t border-neutral-800 pt-4 text-gray-500">
-              <span className="select-none text-gray-600">&gt; </span>
-              token-receipt-output/
-            </div>
-          </div>
+          <InstallCommandPanel items={installItems} />
           <ProofStrip />
         </header>
 
