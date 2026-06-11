@@ -153,10 +153,21 @@ Key docs:
 
 - `docs/adr/001-local-first-receipt-first-direction.md`
 - `docs/product/agentic-development-receipt.md`
+- `docs/product/future-agent-platform.md`
 
 ## Near-term priority
 
 The next meaningful phase is to expand the analysis schema in `packages/core` so the receipt can be driven by richer agentic-development metrics instead of a narrow set of token and waste heuristics.
+
+## Far-future direction
+
+There is also a separate far-future product direction around hosted or sandboxed background analysis for coding-session and agent-session analytics over time.
+
+That direction is captured in:
+
+- `docs/product/future-agent-platform.md`
+
+It is intentionally not part of the current implementation scope.
 
 ## System diagram
 
