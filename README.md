@@ -13,6 +13,7 @@ It parses local agent logs, scores the most defensible forms of waste, renders a
 - No separate model API required in v1
 - Satirical output grounded in real local usage signals
 - Open source and macOS-first
+- Renderer output uses the same receipt composition shown on the landing page
 
 ## Current status
 
@@ -106,6 +107,17 @@ packages/runtime/dist/token-receipt-darwin-arm64.tar.gz
    - `share/linkedin.txt`
 6. The skill reads those generated artifacts and writes the final in-session roast.
 
+## Receipt contract
+
+`receipt.json` is not just totals and line items. It also carries the display metadata that the PNG renderer uses for the final visual artifact.
+
+That means the receipt boundary is:
+
+- analytical fields such as totals, waste lines, and disclaimer text
+- display fields such as the order header, stats rows, detail rows, activity grid, and footer copy
+
+The goal is to keep `packages/render` as a pure renderer from `Receipt` to PNG, while keeping the generated receipt visually aligned with the landing-page example.
+
 ## Supported agents
 
 ### Codex
@@ -173,7 +185,13 @@ token-receipt/
 ```bash
 bun run format
 bun run check
+bun run -F @token-receipt/skills test:skill-smoke
 ```
+
+Notes:
+
+- `bun run check` is the fast default validation path.
+- `bun run -F @token-receipt/skills test:skill-smoke` runs the real `generate.sh` wrapper against deterministic demo data and asserts the output artifact contract.
 
 ## Releasing
 

@@ -41,6 +41,12 @@ Force a fresh runtime install:
 ~/.codex/skills/token-receipt/scripts/generate.sh --update-runtime --since 30d
 ```
 
+Deterministic smoke test during repo development:
+
+```bash
+bun run -F @token-receipt/skills test:skill-smoke
+```
+
 ## Release artifact
 
 Build the macOS arm64 archive that the skill installer expects:
@@ -74,3 +80,5 @@ Every run writes to `token-receipt-output/` in the current working directory:
 - `receipt.png`
 - `share/x.txt`
 - `share/linkedin.txt`
+
+`receipt.json` also contains the display metadata used by the PNG renderer so the generated receipt can stay visually aligned with the landing-page example.

@@ -22,6 +22,7 @@ Use Bun for repo work.
 bun install
 bun run format
 bun run check
+bun run -F @token-receipt/skills test:skill-smoke
 bun run skill:install
 bun run runtime:build:darwin-arm64
 ```
@@ -49,6 +50,13 @@ When working on this repo:
 3. Use `apply_patch` for manual edits.
 4. Run `bun run format` and `bun run check` after changes.
 5. Keep skill behavior grounded in `analysis.json` and generated artifacts.
+6. Treat `receipt.json` as the renderer contract. If the PNG needs new sections or display details, add them to `Receipt` in `packages/core` instead of deriving them ad hoc inside `packages/render`.
+
+## Renderer Notes
+
+- The generated PNG is expected to match the landing-page receipt treatment closely, including the paper styling and section layout.
+- `packages/render` should stay a pure `Receipt -> PNG` layer.
+- Use `bun run -F @token-receipt/skills test:skill-smoke` for wrapper-level validation when touching install flow or receipt rendering.
 
 ## Text Diagram
 

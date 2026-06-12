@@ -2,6 +2,7 @@
 
 - Run `bun run format`
 - Run `bun run check`
+- Run `bun run -F @token-receipt/skills test:skill-smoke`
 - Build the release artifact with `bun run runtime:build:darwin-arm64`
 - Confirm `skills/token-receipt/` is the canonical skill package
 - Run `bun run skill:install`

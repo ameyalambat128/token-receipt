@@ -44,6 +44,7 @@ Run these from the repo root:
 bun install
 bun run format
 bun run check
+bun run -F @token-receipt/skills test:skill-smoke
 bun run runtime:build:darwin-arm64
 ```
 
