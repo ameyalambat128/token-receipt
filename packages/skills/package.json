@@ -6,6 +6,7 @@
   "scripts": {
     "format": "prettier --write \"../../skills/token-receipt/**/*.{md,json}\"",
     "check": "bash ./check.sh",
-    "check-types": "bash ./check.sh"
+    "check-types": "bash ./check.sh",
+    "test:skill-smoke": "bun test ./skill-smoke.test.ts"
   }
 }

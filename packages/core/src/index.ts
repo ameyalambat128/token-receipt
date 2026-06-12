@@ -59,6 +59,19 @@ export type ReceiptLineItem = {
   kind: "summary" | "waste";
 };
 
+export type ReceiptDisplayRow = {
+  label: string;
+  value: string;
+};
+
+export type ReceiptActivity = {
+  title: string;
+  periodLabel: string;
+  startLabel: string;
+  endLabel: string;
+  columns: number[][];
+};
+
 export type Receipt = {
   title: string;
   subtitle: string;
@@ -71,6 +84,16 @@ export type Receipt = {
   lines: ReceiptLineItem[];
   footer: string;
   disclaimer: string;
+  display: {
+    orderLabel: string;
+    generatedDate: string;
+    providerLabel: string;
+    stats: ReceiptDisplayRow[];
+    details: ReceiptDisplayRow[];
+    activity: ReceiptActivity;
+    note: string;
+    footerLink: string;
+  };
 };
 
 export type Analysis = {
@@ -327,20 +350,31 @@ export function analyzeLogs(options: CliOptions): Analysis {
   );
 
   const topSignals = buildTopSignals(signalRollup);
-  const receipt = buildReceipt(totals.apiEquivalentCostUsd, totals, topSignals);
+  const generatedAt = new Date().toISOString();
+  const providerNames = uniqueProviders(sessions);
+  const filteredSessions = options.anonymize
+    ? sessions.map((session) => ({
+        ...session,
+        projectPath: anonymizePath(session.projectPath),
+        projectName: anonymizeProject(session.projectName),
+      }))
+    : sessions;
+  const receipt = buildReceipt({
+    apiEquivalentCostUsd: totals.apiEquivalentCostUsd,
+    generatedAt,
+    options,
+    providerNames,
+    sessions: filteredSessions,
+    topSignals,
+    totals,
+  });
 
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     options,
-    providerNames: uniqueProviders(sessions),
+    providerNames,
     totals,
-    sessions: options.anonymize
-      ? sessions.map((session) => ({
-          ...session,
-          projectPath: anonymizePath(session.projectPath),
-          projectName: anonymizeProject(session.projectName),
-        }))
-      : sessions,
+    sessions: filteredSessions,
     topSignals,
     receipt,
     share: buildShareCopy(receipt),
@@ -765,11 +799,23 @@ function buildTopSignals(accumulator: SignalAccumulator) {
     .slice(0, 5);
 }
 
-function buildReceipt(
-  apiEquivalentCostUsd: number,
-  totals: Analysis["totals"],
-  topSignals: WasteSignal[],
-): Receipt {
+function buildReceipt({
+  apiEquivalentCostUsd,
+  generatedAt,
+  options,
+  providerNames,
+  sessions,
+  topSignals,
+  totals,
+}: {
+  apiEquivalentCostUsd: number;
+  generatedAt: string;
+  options: CliOptions;
+  providerNames: string[];
+  sessions: ParsedSession[];
+  topSignals: WasteSignal[];
+  totals: Analysis["totals"];
+}): Receipt {
   const exaggerationFactor =
     8 +
     Math.min(
@@ -804,11 +850,20 @@ function buildReceipt(
       Math.floor(60 + Math.log10(Math.max(10, totals.outputTokens)) * 9),
     ),
   );
+  const providerLabel = providerNames
+    .map((provider) => provider.toUpperCase())
+    .join(" + ");
+  const orderLabel = buildReceiptOrderLabel({
+    options,
+    sessions,
+    totals,
+    apiEquivalentCostUsd,
+  });
 
   return {
     title: "Your monthly AI bill",
     subtitle: "officially itemized",
-    providerNames: [],
+    providerNames,
     totalUsd,
     budgetedUsd,
     avoidableUsd,
@@ -825,6 +880,56 @@ function buildReceipt(
     ],
     footer: "Thank you for your tokens.",
     disclaimer: "satirical estimate based on local agent logs",
+    display: {
+      orderLabel,
+      generatedDate: formatReceiptDate(generatedAt),
+      providerLabel,
+      stats: [
+        {
+          label: "Sessions",
+          value: formatCount(totals.sessions),
+        },
+        {
+          label: "Tool calls",
+          value: formatCount(sumSessionMetric(sessions, "functionCalls")),
+        },
+        {
+          label: "Tokens burned",
+          value: formatCompactCount(
+            totals.inputTokens +
+              totals.cachedInputTokens +
+              totals.outputTokens +
+              totals.cacheCreation1hTokens +
+              totals.cacheCreation5mTokens,
+          ),
+        },
+        {
+          label: "Peak spiral",
+          value: buildPeakSpiralLabel(sessions),
+        },
+      ],
+      details: [
+        {
+          label: "CARD",
+          value: `**** **** **** ${String(new Date(generatedAt).getUTCFullYear()).slice(-4)}`,
+        },
+        {
+          label: "AUTH CODE",
+          value: buildReceiptAuthCode(totals),
+        },
+        {
+          label: "AVOIDABLE WASTE",
+          value: `$${formatUsd(avoidableUsd)}`,
+        },
+        {
+          label: "USEFUL WORK",
+          value: `$${formatUsd(usefulUsd)}`,
+        },
+      ],
+      activity: buildReceiptActivity(generatedAt, options.since, sessions),
+      note: "generated from local agent logs",
+      footerLink: "skills.sh/ameyalambat128/token-receipt",
+    },
   };
 }
 
@@ -948,6 +1053,19 @@ function formatUsd(value: number) {
   });
 }
 
+function formatCount(value: number) {
+  return value.toLocaleString("en-US", {
+    maximumFractionDigits: 0,
+  });
+}
+
+function formatCompactCount(value: number) {
+  return new Intl.NumberFormat("en-US", {
+    notation: "compact",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function anonymizePath(input: string) {
   return input.replace(homeDir(), "~");
 }
@@ -963,56 +1081,55 @@ function homeDir() {
 }
 
 function buildDemoAnalysis(options: CliOptions): Analysis {
-  const receipt = buildReceipt(
-    17.42,
+  const generatedAt = new Date().toISOString();
+  const providerNames = ["codex", "claude"];
+  const totals = {
+    sessions: 12,
+    inputTokens: 1_285_000,
+    cachedInputTokens: 942_000,
+    cacheCreation5mTokens: 28_000,
+    cacheCreation1hTokens: 0,
+    outputTokens: 44_000,
+    reasoningTokens: 6_200,
+    apiEquivalentCostUsd: 17.42,
+  };
+  const topSignals = [
     {
-      sessions: 12,
-      inputTokens: 1_285_000,
-      cachedInputTokens: 942_000,
-      cacheCreation5mTokens: 28_000,
-      cacheCreation1hTokens: 0,
-      outputTokens: 44_000,
-      reasoningTokens: 6_200,
-      apiEquivalentCostUsd: 17.42,
+      label: "Context window emotional support",
+      detail: "Cached context outweighed fresh input by 5.4x.",
+      score: 22,
     },
-    [
-      {
-        label: "Context window emotional support",
-        detail: "Cached context outweighed fresh input by 5.4x.",
-        score: 22,
-      },
-      {
-        label: "Subagent middle management",
-        detail: "Seven delegated detours made an appearance.",
-        score: 14,
-      },
-      {
-        label: "MCP tool tourism",
-        detail: "Tool hopping padded the trip.",
-        score: 9,
-      },
-      {
-        label: "Running the same command again for confidence",
-        detail: "Shell loops happened three extra times.",
-        score: 7,
-      },
-    ],
-  );
+    {
+      label: "Subagent middle management",
+      detail: "Seven delegated detours made an appearance.",
+      score: 14,
+    },
+    {
+      label: "MCP tool tourism",
+      detail: "Tool hopping padded the trip.",
+      score: 9,
+    },
+    {
+      label: "Running the same command again for confidence",
+      detail: "Shell loops happened three extra times.",
+      score: 7,
+    },
+  ];
+  const receipt = buildReceipt({
+    apiEquivalentCostUsd: 17.42,
+    generatedAt,
+    options,
+    providerNames,
+    sessions: [],
+    topSignals,
+    totals,
+  });
 
   return {
-    generatedAt: new Date().toISOString(),
+    generatedAt,
     options,
-    providerNames: ["codex", "claude"],
-    totals: {
-      sessions: 12,
-      inputTokens: 1_285_000,
-      cachedInputTokens: 942_000,
-      cacheCreation5mTokens: 28_000,
-      cacheCreation1hTokens: 0,
-      outputTokens: 44_000,
-      reasoningTokens: 6_200,
-      apiEquivalentCostUsd: 17.42,
-    },
+    providerNames,
+    totals,
     sessions: [],
     topSignals: receipt.lines
       .filter((line) => line.kind === "waste")
@@ -1024,4 +1141,182 @@ function buildDemoAnalysis(options: CliOptions): Analysis {
     receipt,
     share: buildShareCopy(receipt),
   };
+}
+
+function sumSessionMetric(
+  sessions: ParsedSession[],
+  key: "functionCalls" | "outputTokens",
+) {
+  return sessions.reduce((sum, session) => sum + session[key], 0);
+}
+
+function buildReceiptOrderLabel({
+  options,
+  sessions,
+  totals,
+  apiEquivalentCostUsd,
+}: {
+  options: CliOptions;
+  sessions: ParsedSession[];
+  totals: Analysis["totals"];
+  apiEquivalentCostUsd: number;
+}) {
+  const raw = Math.round(
+    apiEquivalentCostUsd * 100 +
+      totals.sessions * 17 +
+      sumSessionMetric(sessions, "functionCalls"),
+  );
+  const orderNumber = String(Math.abs(raw % 10_000)).padStart(4, "0");
+  const scope =
+    options.project?.toUpperCase() ??
+    (sessions.length === 1
+      ? sessions[0]?.projectName.toUpperCase()
+      : "ALL PROJECTS");
+
+  return `ORDER #${orderNumber} FOR ${scope}`;
+}
+
+function formatReceiptDate(value: string) {
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  })
+    .format(new Date(value))
+    .toUpperCase();
+}
+
+function buildPeakSpiralLabel(sessions: ParsedSession[]) {
+  const peakSession = [...sessions].sort(
+    (left, right) => right.apiEquivalentCostUsd - left.apiEquivalentCostUsd,
+  )[0];
+
+  if (!peakSession?.endedAt) return "N/A";
+
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(peakSession.endedAt));
+}
+
+function buildReceiptAuthCode(totals: Analysis["totals"]) {
+  return String(
+    Math.abs(
+      Math.round(
+        totals.outputTokens + totals.reasoningTokens + totals.sessions * 13,
+      ) % 1_000_000,
+    ),
+  ).padStart(6, "0");
+}
+
+function buildReceiptActivity(
+  generatedAt: string,
+  since: string,
+  sessions: ParsedSession[],
+): ReceiptActivity {
+  const days = parseSinceDays(since) ?? 30;
+  const end = new Date(generatedAt);
+  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+  const span = Math.max(1, end.getTime() - start.getTime());
+  const columns = Array.from({ length: 16 }, () => Array(7).fill(0));
+
+  if (!sessions.length) {
+    return {
+      title: "Got Helped",
+      periodLabel: formatPeriodLabel(since),
+      startLabel: formatMonthLabel(start),
+      endLabel: formatMonthLabel(end),
+      columns: columns.map((column, columnIndex) =>
+        column.map((_, rowIndex) =>
+          Math.min(
+            4,
+            Math.max(
+              0,
+              Math.round(
+                2 + Math.sin((columnIndex + 1) * 0.65 + rowIndex * 0.85) * 1.7,
+              ),
+            ),
+          ),
+        ),
+      ),
+    };
+  }
+
+  sessions.forEach((session) => {
+    if (!session.endedAt) return;
+
+    const date = new Date(session.endedAt);
+    const time = date.getTime();
+
+    if (Number.isNaN(time)) return;
+
+    const columnIndex = Math.min(
+      15,
+      Math.max(0, Math.floor(((time - start.getTime()) / span) * 16)),
+    );
+    const rowIndex = date.getDay();
+    const intensity = Math.min(
+      4,
+      1 +
+        Math.floor(
+          Math.log10(
+            Math.max(10, session.functionCalls + session.outputTokens / 1500),
+          ),
+        ),
+    );
+
+    const column = columns[columnIndex];
+
+    if (!column) return;
+
+    column[rowIndex] = Math.min(4, (column[rowIndex] ?? 0) + intensity);
+  });
+
+  return {
+    title: "Got Helped",
+    periodLabel: formatPeriodLabel(since),
+    startLabel: formatMonthLabel(start),
+    endLabel: formatMonthLabel(end),
+    columns,
+  };
+}
+
+function parseSinceDays(since: string) {
+  const dayMatch = since.match(/^(\d+)d$/i);
+  const weekMatch = since.match(/^(\d+)w$/i);
+
+  if (dayMatch) return Number(dayMatch[1]);
+  if (weekMatch) return Number(weekMatch[1]) * 7;
+
+  return null;
+}
+
+function formatPeriodLabel(since: string) {
+  const dayMatch = since.match(/^(\d+)d$/i);
+  const weekMatch = since.match(/^(\d+)w$/i);
+  const hourMatch = since.match(/^(\d+)h$/i);
+
+  if (dayMatch) {
+    const days = Number(dayMatch[1]);
+    return `LAST ${days} DAY${days === 1 ? "" : "S"}`;
+  }
+
+  if (weekMatch) {
+    const weeks = Number(weekMatch[1]);
+    return `LAST ${weeks} WEEK${weeks === 1 ? "" : "S"}`;
+  }
+
+  if (hourMatch) {
+    const hours = Number(hourMatch[1]);
+    return `LAST ${hours} HOUR${hours === 1 ? "" : "S"}`;
+  }
+
+  return since.toUpperCase();
+}
+
+function formatMonthLabel(value: Date) {
+  return new Intl.DateTimeFormat("en-US", { month: "short" })
+    .format(value)
+    .toUpperCase();
 }
