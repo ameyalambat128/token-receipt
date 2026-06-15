@@ -1,14 +1,15 @@
 # /token-receipt
 
-Token Receipt turns Codex and Claude Code logs into a satirical AI expense receipt.
+Token Receipt turns Codex and Claude Code logs into your coding-agent bill.
 
 ## What is this?
 
-Token Receipt is a skill-first local tool for people using coding agents heavily and wondering where all the tokens went.
+Token Receipt is a skill-first local tool for people using coding agents heavily and wanting one artifact that instantly shows how they work.
 
-It parses local agent logs, scores the most defensible forms of waste, renders a thermal-paper receipt PNG, and generates share-ready captions for X and LinkedIn.
+It parses local agent logs, scores the most defensible forms of waste, renders a thermal-paper receipt PNG, and generates share-ready post copy grounded in real local habits.
 
 - Skill-first UX for Codex and Claude Code
+- Screenshot-first artifact for agent-heavy developers
 - Local parsing and local image generation
 - No separate model API required in v1
 - Satirical output grounded in real local usage signals
@@ -167,7 +168,7 @@ Every run writes to `token-receipt-output/` in the current working directory:
 token-receipt/
 ├── apps/
 │   └── web/                      # Marketing site
-├── docs/                         # Launch, virality, and skill docs
+├── docs/                         # Public docs and product notes
 ├── packages/
 │   ├── core/                     # Log parsing, heuristics, analysis
 │   ├── render/                   # Receipt SVG and PNG rendering
@@ -210,15 +211,11 @@ Release assets:
 ## Who this is for
 
 - People using Codex or Claude Code daily
-- Developers who want a funny but grounded summary of agent usage
-- People posting receipts, screenshots, or launch content about AI spend
+- Developers who want a funny but grounded snapshot of agent habits
+- People posting receipts, screenshots, or launch content about coding-agent workflows
 - Anyone who wants a local-first artifact instead of a hosted dashboard
 
 ## Related docs
 
 - `docs/skills.md`
 - `docs/release.md`
-- `docs/x.md`
-- `docs/linkedin.md`
-- `docs/launch-checklist.md`
-- `docs/reply-bank.md`

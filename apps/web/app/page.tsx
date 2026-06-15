@@ -13,9 +13,9 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 
-const siteUrl = "https://tokenreceipt.dev";
+const siteUrl = "https://tokenreceipt.ameyalambat.com";
 const productDescription =
-  "Token Receipt turns your Codex and Claude Code logs into an AI bill with a thermal-paper receipt, share-ready captions, and skill-native workflows.";
+  "Token Receipt turns your Codex and Claude Code logs into your coding-agent bill with a thermal-paper receipt, share-ready post copy, and skill-native workflows.";
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -82,7 +82,7 @@ const faqItems = [
     value: "share-loop",
     question: "What makes this shareable?",
     answer:
-      "Each run produces a thermal-paper PNG, an X caption, and a LinkedIn caption. The output feels personal because it is derived from your own agent habits, not from a generic meme generator.",
+      "Each run produces a thermal-paper PNG plus ready-to-edit social copy. The output feels personal because it is derived from your own agent habits, not from a generic meme generator.",
   },
 ];
 
@@ -132,9 +132,9 @@ export default function Home() {
           </p>
 
           <p className="mt-6 leading-relaxed text-gray-400">
-            Token Receipt turns local agent logs into an AI bill with a
-            thermal-paper PNG, share-ready captions, and a skill-native flow
-            that works inside the tools people already use.
+            Token Receipt turns local agent logs into your coding-agent bill
+            with a thermal-paper PNG, share-ready post copy, and a skill-native
+            flow that works inside the tools people already use.
           </p>
           <p className="mt-4 text-sm text-gray-500">
             Skill-first. Local-first. No extra model API in v1.
@@ -203,7 +203,8 @@ export default function Home() {
               What is Token Receipt?
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
-              Token Receipt is a receipt-style usage snapshot for coding agents.
+              Token Receipt is a screenshot-first usage artifact for coding
+              agents.
             </p>
             <p className="mb-4 leading-relaxed text-gray-400">
               It reads the session logs that Codex and Claude Code already write
@@ -217,7 +218,7 @@ export default function Home() {
             </p>
             <ul className="list-inside list-disc space-y-1 text-gray-400">
               <li>Reads local logs from Codex and Claude Code</li>
-              <li>Builds a thermal-paper PNG plus share text</li>
+              <li>Builds a thermal-paper PNG plus ready-to-edit post copy</li>
               <li>Uses skills so the host agent can write the final roast</li>
             </ul>
           </section>

@@ -5,10 +5,10 @@ import Background from "@/components/background";
 import { Providers } from "@/components/providers";
 import { cn } from "@/lib/utils";
 
-const siteUrl = "https://tokenreceipt.dev";
+const siteUrl = "https://tokenreceipt.ameyalambat.com";
 const productName = "Token Receipt";
 const productDescription =
-  "Token Receipt turns your Codex and Claude Code session logs into a satirical AI expense receipt, complete with a thermal-paper PNG and share-ready captions.";
+  "Token Receipt turns your Codex and Claude Code logs into your coding-agent bill, complete with a thermal-paper PNG and share-ready post copy.";
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 const ibmPlexSans = IBM_Plex_Sans({

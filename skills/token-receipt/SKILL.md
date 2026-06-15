@@ -1,6 +1,6 @@
 ---
 name: token-receipt
-description: Generate a satirical AI bill from recent Codex and Claude Code logs. Use when the user asks for a token receipt, AI bill, satire receipt, or shareable roast of their agent usage.
+description: Generate a coding-agent bill from recent Codex and Claude Code logs. Use when the user asks for a token receipt, AI bill, satire receipt, or shareable roast of their agent usage.
 metadata:
   openclaw:
     os: ["darwin"]
