@@ -8,6 +8,7 @@
     "format": "turbo run format && prettier --write \"**/*.{ts,tsx,js,json,md,css}\"",
     "check": "turbo run check",
     "check-types": "turbo run check-types",
+    "pricing:refresh": "bun run -F @token-receipt/core pricing:refresh",
     "skill:install": "bash packages/skills/install.sh",
     "runtime:build:darwin-arm64": "bun run -F token-receipt build:darwin-arm64"
   },

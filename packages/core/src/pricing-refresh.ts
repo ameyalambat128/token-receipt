@@ -1,0 +1,223 @@
+import type {
+  ClaudeFamily,
+  ClaudeFamilyPricing,
+  CodexModelPricing,
+  PricingCatalog,
+  PricingProvider,
+  PricingSource,
+} from "./pricing-types.js";
+
+export const OPENAI_PRICING_URL =
+  "https://developers.openai.com/api/docs/pricing";
+export const CLAUDE_PRICING_URL =
+  "https://platform.claude.com/docs/en/about-claude/pricing";
+export const KIRO_PRICING_REFERENCE = "local-static:kiro-credit-overage-v1";
+export const KIRO_CREDIT_OVERAGE_USD = 0.04;
+
+const codexSectionMarker =
+  "&quot;model&quot;:[0,&quot;Codex&quot;],&quot;rows&quot;:";
+const providerOrder: PricingProvider[] = ["codex", "claude", "kiro"];
+const claudeFamilyOrder: ClaudeFamily[] = ["haiku", "opus", "sonnet"];
+
+export const parseOpenAiPricing = (html: string) => {
+  const start = html.indexOf(codexSectionMarker);
+  if (start === -1) {
+    throw new Error(
+      "Could not find the Codex pricing section on the OpenAI page.",
+    );
+  }
+
+  const nextSection = html.indexOf(
+    "]}],[0,{&quot;model&quot;:[0,&quot;",
+    start,
+  );
+  const section = html.slice(
+    start,
+    nextSection === -1 ? undefined : nextSection,
+  );
+  const matches = section.matchAll(
+    /\[\[0,&quot;([a-z0-9.-]*codex[a-z0-9.-]*)&quot;\],\[0,([0-9.]+)\],\[0,([0-9.]+)\],\[0,([0-9.]+)\]\]/gi,
+  );
+  const models = Object.fromEntries(
+    [...matches]
+      .map((match): [string, CodexModelPricing] => [
+        decodeHtml(match[1] ?? "").trim(),
+        {
+          input: parseNumber(match[2]),
+          cachedInput: parseNumber(match[3]),
+          output: parseNumber(match[4]),
+        },
+      ])
+      .sort(([left], [right]) => left.localeCompare(right)),
+  );
+
+  if (!models["gpt-5-codex"]) {
+    throw new Error(
+      "Could not find the required gpt-5-codex price on the OpenAI page.",
+    );
+  }
+
+  return {
+    defaultModel: "gpt-5-codex",
+    models,
+  };
+};
+
+export const parseAnthropicPricing = (html: string) => {
+  const rows = [...html.matchAll(/<tr\b[^>]*>(.*?)<\/tr>/gms)]
+    .map((match) => match[1] ?? "")
+    .map((row) =>
+      [...row.matchAll(/<td\b[^>]*>(.*?)<\/td>/gms)].map((cell) =>
+        normalizeCell(cell[1] ?? ""),
+      ),
+    )
+    .filter((cells) => cells.length >= 6);
+
+  const families = claudeFamilyOrder.reduce<
+    Record<ClaudeFamily, ClaudeFamilyPricing>
+  >(
+    (aggregate, family) => {
+      const row = rows.find((cells) => {
+        const label = cells[0] ?? "";
+        return (
+          label.toLowerCase().startsWith(`claude ${family}`) &&
+          !/retired/i.test(label)
+        );
+      });
+
+      if (!row) {
+        throw new Error(
+          `Could not find the active Claude ${family} pricing row.`,
+        );
+      }
+
+      aggregate[family] = {
+        label: `Claude ${capitalize(family)}`,
+        sourceModel: row[0] ?? `Claude ${capitalize(family)}`,
+        input: parseDollarRate(getRowCell(row, 1)),
+        cacheWrite5m: parseDollarRate(getRowCell(row, 2)),
+        cacheWrite1h: parseDollarRate(getRowCell(row, 3)),
+        cacheRead: parseDollarRate(getRowCell(row, 4)),
+        output: parseDollarRate(getRowCell(row, 5)),
+      };
+      return aggregate;
+    },
+    {} as Record<ClaudeFamily, ClaudeFamilyPricing>,
+  );
+
+  return {
+    defaultFamily: "sonnet" as const,
+    families,
+  };
+};
+
+export const buildPricingCatalogFromHtml = ({
+  openAiHtml,
+  anthropicHtml,
+  fetchedAt,
+}: {
+  openAiHtml: string;
+  anthropicHtml: string;
+  fetchedAt: string;
+}) =>
+  ({
+    fetchedAt,
+    sources: {
+      codex: buildSource("web", fetchedAt, OPENAI_PRICING_URL),
+      claude: buildSource("web", fetchedAt, CLAUDE_PRICING_URL),
+      kiro: buildSource("static", fetchedAt, KIRO_PRICING_REFERENCE),
+    },
+    codex: parseOpenAiPricing(openAiHtml),
+    claude: parseAnthropicPricing(anthropicHtml),
+    kiro: {
+      creditOverageUsd: KIRO_CREDIT_OVERAGE_USD,
+    },
+  }) satisfies PricingCatalog;
+
+export const renderPricingCatalogModule = (catalog: PricingCatalog) => {
+  const sortedSources: Record<PricingProvider, PricingSource> = {
+    codex: catalog.sources.codex,
+    claude: catalog.sources.claude,
+    kiro: catalog.sources.kiro,
+  };
+  const sortedFamilies: Record<ClaudeFamily, ClaudeFamilyPricing> = {
+    haiku: catalog.claude.families.haiku,
+    opus: catalog.claude.families.opus,
+    sonnet: catalog.claude.families.sonnet,
+  };
+  const sortedCatalog = {
+    fetchedAt: catalog.fetchedAt,
+    sources: sortedSources,
+    codex: {
+      defaultModel: catalog.codex.defaultModel,
+      models: Object.fromEntries(
+        Object.entries(catalog.codex.models).sort(([left], [right]) =>
+          left.localeCompare(right),
+        ),
+      ),
+    },
+    claude: {
+      defaultFamily: catalog.claude.defaultFamily,
+      families: sortedFamilies,
+    },
+    kiro: {
+      creditOverageUsd: catalog.kiro.creditOverageUsd,
+    },
+  } satisfies PricingCatalog;
+
+  return [
+    "/* This file is auto-generated by `bun run pricing:refresh`. Do not edit manually. */",
+    "",
+    'import type { PricingCatalog } from "./pricing-types";',
+    "",
+    `export const pricingCatalog = ${JSON.stringify(sortedCatalog, null, 2)} satisfies PricingCatalog;`,
+    "",
+  ].join("\n");
+};
+
+const normalizeCell = (value: string) =>
+  decodeHtml(value.replace(/<[^>]+>/g, " "))
+    .replace(/\s+/g, " ")
+    .trim();
+
+const decodeHtml = (value: string) =>
+  value
+    .replaceAll("&quot;", '"')
+    .replaceAll("&amp;", "&")
+    .replaceAll("&#x27;", "'")
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&nbsp;", " ");
+
+const parseNumber = (value?: string) => {
+  const parsed = Number(value ?? "");
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Could not parse numeric price value: ${String(value)}`);
+  }
+  return parsed;
+};
+
+const parseDollarRate = (value: string) => {
+  const parsed = Number(value.replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Could not parse dollar rate from: ${value}`);
+  }
+  return parsed;
+};
+
+const buildSource = (
+  kind: PricingSource["kind"],
+  fetchedAt: string,
+  reference: string,
+) => ({ kind, fetchedAt, reference }) satisfies PricingSource;
+
+const capitalize = (value: string) =>
+  `${value.slice(0, 1).toUpperCase()}${value.slice(1)}`;
+
+const getRowCell = (row: string[], index: number) => {
+  const value = row[index];
+  if (value === undefined) {
+    throw new Error(`Missing pricing cell at column ${index}.`);
+  }
+  return value;
+};

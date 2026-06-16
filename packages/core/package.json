@@ -8,6 +8,7 @@
   },
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",
+    "pricing:refresh": "bun ./scripts/refresh-pricing.ts",
     "test": "bun test",
     "check": "bun run test && tsc --noEmit",
     "check-types": "tsc --noEmit"
