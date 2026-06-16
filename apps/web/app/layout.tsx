@@ -36,6 +36,16 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "/",
   },
+  icons: {
+    icon: [
+      {
+        url: "/icon.png",
+        type: "image/png",
+        sizes: "128x128",
+      },
+    ],
+    shortcut: "/icon.png",
+  },
   verification: googleSiteVerification
     ? {
         google: googleSiteVerification,

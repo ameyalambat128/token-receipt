@@ -112,7 +112,7 @@ export function ProofStrip() {
             backgroundImage: [
               "linear-gradient(180deg, rgba(255,252,247,0.9), rgba(245,239,231,0.8))",
               "linear-gradient(180deg, rgba(255,255,255,0.18), transparent 18%, rgba(120,106,89,0.06) 84%, rgba(255,255,255,0.1))",
-              "url('/wrinkled-paper-texture-7.jpg')",
+              "url('/wrinkled-receipt-paper.jpg')",
             ].join(", "),
             backgroundBlendMode: "screen, multiply, normal",
             backgroundPosition: "center, center, center",
