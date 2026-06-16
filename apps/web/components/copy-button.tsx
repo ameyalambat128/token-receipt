@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { CheckIcon, CopyIcon } from "@/components/icons";
-import { Button } from "@/components/ui/button";
 
 export function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
@@ -25,15 +24,13 @@ export function CopyButton({ text }: { text: string }) {
   };
 
   return (
-    <Button
+    <button
       type="button"
-      variant="ghost"
-      size="icon"
       onClick={handleCopy}
-      className="text-muted-foreground hover:bg-white/6 hover:text-foreground"
-      aria-label={copied ? "Copied" : "Copy to clipboard"}
+      className="rounded p-3 text-gray-600 transition-colors hover:bg-neutral-800 hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+      aria-label="Copy to clipboard"
     >
       {copied ? <CheckIcon /> : <CopyIcon />}
-    </Button>
+    </button>
   );
 }

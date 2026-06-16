@@ -1,92 +1,105 @@
 "use client";
 
 import * as React from "react";
-import * as AccordionPrimitive from "@radix-ui/react-accordion";
-import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+type AccordionContextValue = {
+  isOpen: boolean;
+  toggle: () => void;
+};
+
+const AccordionContext = React.createContext<AccordionContextValue | null>(
+  null,
+);
 
 export function Accordion({
   className,
   children,
-  ...props
-}: Omit<AccordionPrimitive.AccordionSingleProps, "type"> & {
+}: {
+  className?: string;
   children: React.ReactNode;
 }) {
+  const [openValue, setOpenValue] = React.useState<string | null>(null);
+  const items = React.Children.toArray(children) as React.ReactElement<{
+    value: string;
+  }>[];
+
   return (
-    <AccordionPrimitive.Root
-      data-slot="accordion"
-      type="single"
-      collapsible
-      className={cn(
-        "w-full overflow-hidden rounded-[2rem] border border-white/10 bg-black/20 shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_18px_50px_rgba(0,0,0,0.18)]",
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </AccordionPrimitive.Root>
+    <div className={className}>
+      {items.map((item) => (
+        <AccordionContext.Provider
+          key={item.props.value}
+          value={{
+            isOpen: openValue === item.props.value,
+            toggle: () =>
+              setOpenValue((current) =>
+                current === item.props.value ? null : item.props.value,
+              ),
+          }}
+        >
+          {item}
+        </AccordionContext.Provider>
+      ))}
+    </div>
   );
 }
 
 export function AccordionItem({
   className,
-  ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Item>) {
+  children,
+}: {
+  value: string;
+  className?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <AccordionPrimitive.Item
-      data-slot="accordion-item"
-      className={cn(
-        "border-b border-white/8 px-6 last:border-b-0 sm:px-10 data-[state=open]:bg-white/[0.015]",
-        className,
-      )}
-      {...props}
-    />
+    <div className={cn("border-b last:border-b-0", className)}>{children}</div>
   );
 }
 
 export function AccordionTrigger({
   className,
   children,
-  ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Trigger>) {
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const context = React.useContext(AccordionContext);
+
+  if (!context) return null;
+
   return (
-    <AccordionPrimitive.Header className="flex">
-      <AccordionPrimitive.Trigger
-        data-slot="accordion-trigger"
+    <button
+      type="button"
+      onClick={context.toggle}
+      className={cn(
+        "flex w-full items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
+        className,
+      )}
+    >
+      <span>{children}</span>
+      <span
         className={cn(
-          "group flex flex-1 items-center justify-between gap-6 py-7 text-left text-lg font-medium tracking-[-0.03em] text-foreground transition-colors hover:text-foreground/90 focus-visible:outline-none focus-visible:ring-0 sm:py-9 sm:text-[2rem] sm:leading-none",
-          className,
+          "text-muted-foreground transition-transform duration-200",
+          context.isOpen && "rotate-180",
         )}
-        {...props}
       >
-        <span className="pr-4">{children}</span>
-        <span className="flex size-8 shrink-0 items-center justify-center text-white/65 sm:size-10">
-          <ChevronDown className="size-6 stroke-[2.2] transition-transform duration-200 group-data-[state=open]:rotate-180 sm:size-7" />
-        </span>
-      </AccordionPrimitive.Trigger>
-    </AccordionPrimitive.Header>
+        ˅
+      </span>
+    </button>
   );
 }
 
 export function AccordionContent({
   className,
   children,
-  ...props
-}: React.ComponentProps<typeof AccordionPrimitive.Content>) {
-  return (
-    <AccordionPrimitive.Content
-      data-slot="accordion-content"
-      className="overflow-hidden text-sm data-[state=closed]:animate-accordion-up data-[state=open]:animate-accordion-down"
-      {...props}
-    >
-      <div
-        className={cn(
-          "max-w-4xl pb-8 pr-14 text-base leading-8 text-muted-foreground sm:pb-10 sm:pl-0 sm:pr-24",
-          className,
-        )}
-      >
-        {children}
-      </div>
-    </AccordionPrimitive.Content>
-  );
+}: {
+  className?: string;
+  children: React.ReactNode;
+}) {
+  const context = React.useContext(AccordionContext);
+
+  if (!context || !context.isOpen) return null;
+
+  return <div className={cn("pb-4 pt-0 text-sm", className)}>{children}</div>;
 }

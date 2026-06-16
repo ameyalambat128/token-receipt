@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import localFont from "next/font/local";
+import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import Background from "@/components/background";
 import { Providers } from "@/components/providers";
@@ -8,21 +8,14 @@ import { cn } from "@/lib/utils";
 const siteUrl = "https://tokenreceipt.ameyalambat.com";
 const productName = "Token Receipt";
 const productDescription =
-  "Token Receipt turns your Codex, Claude Code, and Kiro CLI logs into your coding-agent bill, complete with a thermal-paper PNG, pricing-aware analysis, and share-ready post copy.";
+  "Token Receipt turns your Codex, Claude Code, and Kiro CLI logs into your coding-agent bill, complete with a thermal-paper PNG and share-ready post copy.";
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
+const ibmPlexSans = IBM_Plex_Sans({
+  weight: ["300", "400", "500", "600", "700"],
+  subsets: ["latin"],
   display: "swap",
-  weight: "100 900",
-});
-
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  display: "swap",
-  weight: "100 900",
+  variable: "--font-ibm-plex",
 });
 
 export const metadata: Metadata = {
@@ -74,11 +67,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn(
-        "dark bg-[color:var(--background)] text-white",
-        geistSans.variable,
-        geistMono.variable,
-      )}
+      className={cn("dark bg-[#111010] text-white", ibmPlexSans.variable)}
     >
       <body className="font-sans antialiased" suppressHydrationWarning>
         <Background />

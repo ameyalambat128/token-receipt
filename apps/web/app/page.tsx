@@ -1,21 +1,10 @@
+"use client";
+
 import Link from "next/link";
-import {
-  ArrowRight,
-  ArrowUpRight,
-  BadgeDollarSign,
-  Bot,
-  FileImage,
-  FileJson,
-  FileText,
-  FolderSearch,
-  ScanSearch,
-  Terminal,
-  Workflow,
-} from "lucide-react";
-import { CopyButton } from "@/components/copy-button";
 import { GitHubStars } from "@/components/github-stars";
-import { GitHubIcon } from "@/components/icons";
+import { CopyButton } from "@/components/copy-button";
 import { InstallCommandPanel } from "@/components/install-command-panel";
+import { GitHubIcon, XIcon } from "@/components/icons";
 import { ProofStrip } from "@/components/proof-strip";
 import {
   Accordion,
@@ -23,21 +12,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 const siteUrl = "https://tokenreceipt.ameyalambat.com";
-const repoUrl = "https://github.com/ameyalambat128/token-receipt";
 const productDescription =
-  "Token Receipt turns your Codex, Claude Code, and Kiro CLI logs into your coding-agent bill with a thermal-paper receipt, pricing-aware analysis, share-ready post copy, and skill-native workflows.";
+  "Token Receipt turns your Codex, Claude Code, and Kiro CLI logs into your coding-agent bill with a thermal-paper receipt, share-ready post copy, and skill-native workflows.";
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -67,7 +45,6 @@ const structuredData = {
         "Codex",
         "Claude Code",
         "Kiro CLI",
-        "pricing metadata",
         "agent skills",
         "AI bill",
         "satire",
@@ -77,610 +54,362 @@ const structuredData = {
   ],
 };
 
-const installCommand =
-  "npx skills add ameyalambat128/token-receipt --skill token-receipt";
-const repoInstallCommand = "bun install && bun run skill:install";
-const doctorCommand = "bun run -F token-receipt doctor";
-const runtimeCommand =
-  "bun run -F token-receipt generate -- --provider all --since 30d --out ./token-receipt-output";
-
-const installItems = [
-  { label: "skill", command: installCommand },
-  { label: "repo", command: repoInstallCommand },
-  { label: "doctor", command: doctorCommand },
-  { label: "runtime", command: runtimeCommand },
-];
-
-const signalCards = [
-  {
-    value: "3 providers",
-    label: "Codex, Claude Code, and Kiro CLI normalized into one receipt flow.",
-  },
-  {
-    value: "Local-first",
-    label:
-      "The runtime reads session artifacts already on disk and keeps raw logs local.",
-  },
-  {
-    value: "Pricing-aware",
-    label:
-      "Codex and Claude use catalog snapshots, Kiro uses local credit usage at $0.04.",
-  },
-];
-
-const outputCards = [
-  {
-    icon: FileImage,
-    title: "receipt.png",
-    body: "A thermal-paper image you can post without hand-annotating the joke.",
-  },
-  {
-    icon: FileJson,
-    title: "analysis.json",
-    body: "Structured facts, pricing metadata, and provider-level usage that stay inspectable.",
-  },
-  {
-    icon: FileText,
-    title: "share copy",
-    body: "Editable social text for X and LinkedIn generated from the same local analysis.",
-  },
-];
-
-const providerCards = [
-  {
-    name: "Codex",
-    detail:
-      "Reads local Codex sessions, tool activity, prompts, token usage, and waste signals into the shared parser.",
-    pricing:
-      "API-equivalent spend comes from the refreshable OpenAI pricing catalog snapshot stored with the run.",
-  },
-  {
-    name: "Claude Code",
-    detail:
-      "Uses the same skill-native loop, with local transcript analysis and host-session copy generation.",
-    pricing:
-      "Claude pricing metadata is sourced from the refreshable Anthropic catalog snapshot recorded in analysis.json.",
-  },
-  {
-    name: "Kiro CLI",
-    detail:
-      "Parses local CLI sessions out of Kiro's SQLite store, including tool activity, planning turns, and project directory context.",
-    pricing:
-      "Kiro fills spend from summed local credit usage. Token counters stay zero when local token fields are not present.",
-  },
-];
-
-const workflowCards = [
-  {
-    icon: FolderSearch,
-    title: "Discover local sessions",
-    body: "Doctor and generate commands scan Codex, Claude Code, and Kiro CLI session sources on your machine.",
-  },
-  {
-    icon: ScanSearch,
-    title: "Normalize the chaos",
-    body: "The core runtime converts prompts, tool calls, repeated actions, and pricing metadata into one analysis model.",
-  },
-  {
-    icon: BadgeDollarSign,
-    title: "Compute the bill",
-    body: "API-equivalent spend is estimated per provider, with Kiro explicitly based on local credits rather than invented token math.",
-  },
-  {
-    icon: Workflow,
-    title: "Ship the artifacts",
-    body: "Each run writes the receipt image, share copy, and JSON outputs into ./token-receipt-output.",
-  },
-];
-
-const pricingSources = [
-  {
-    label: "OpenAI pricing",
-    href: "https://developers.openai.com/api/docs/pricing",
-    body: "Used to refresh the Codex pricing catalog snapshot bundled into analysis metadata.",
-  },
-  {
-    label: "Anthropic pricing",
-    href: "https://platform.claude.com/docs/en/about-claude/pricing",
-    body: "Used to refresh the Claude pricing catalog snapshot recorded per run.",
-  },
-  {
-    label: "Kiro credit basis",
-    href: "https://kiro.dev/pricing/",
-    body: "Kiro spend is derived from locally tracked credit usage at the published $0.04 per additional credit rate.",
-  },
-];
-
 const faqItems = [
   {
-    value: "api-key",
+    value: "existing-subscription",
     question: "Does Token Receipt need another API key?",
     answer:
-      "No for the skill-first path. The runtime computes the facts locally, and Codex or Claude Code uses the host session you are already in to phrase the roast.",
+      "No for the skill-first path. The local runtime computes the facts, and Codex or Claude Code uses the session you are already in to phrase the roast. The runtime itself does not call OpenAI or Anthropic APIs directly in v1.",
   },
   {
     value: "providers",
-    question: "Which agents are supported right now?",
+    question: "Which agents does Token Receipt support first?",
     answer:
-      "V1 supports Codex, Claude Code, and Kiro CLI. They are normalized into the same ParsedSession and analysis flow so the receipt can compare them directly.",
+      "V1 supports Codex, Claude Code, and Kiro CLI. It reads the local session logs those tools already write, normalizes usage and tool activity, and produces a receipt plus share copy.",
   },
   {
     value: "privacy",
-    question: "Does it upload prompts or source code?",
+    question: "Does it upload prompts or code?",
     answer:
-      "No by default. The runtime stays local, and the skills are designed to hand the host agent structured facts instead of raw logs unless you explicitly ask for deeper inspection.",
+      "No. The runtime stays local. Skills are instructed to pass sanitized structured facts into the host agent instead of raw session logs unless you explicitly ask for deeper inspection.",
   },
   {
     value: "accuracy",
-    question: "Is the bill meant to match provider invoices exactly?",
+    question: "Is the receipt supposed to be financially accurate?",
     answer:
-      "No. It is grounded in real local usage signals, but it remains an interpreted local receipt rather than an official ledger. Kiro is especially explicit about using credits instead of token-derived pricing.",
+      "It is grounded in real local usage and tool signals, but it is still an interpretation of local agent activity rather than a billing ledger. Kiro cost is based on local credit usage rather than token-derived API pricing.",
   },
   {
-    value: "pricing",
-    question: "Where do the pricing assumptions come from?",
+    value: "share-loop",
+    question: "What makes this shareable?",
     answer:
-      "The runtime stores pricing metadata in analysis.json. Codex and Claude use refreshable provider-page sourced catalogs, while Kiro uses local credit usage multiplied by the tracked overage rate.",
-  },
-  {
-    value: "outputs",
-    question: "What do I get after a run?",
-    answer:
-      "A receipt image, analysis.json, receipt.json, and share-ready text files in ./token-receipt-output.",
+      "Each run produces a thermal-paper PNG plus ready-to-edit social copy. The output feels personal because it is derived from your own agent habits, not from a generic meme generator.",
   },
 ];
 
-function SectionIntro({
-  badge,
-  title,
-  body,
-}: {
-  badge: string;
-  title: string;
-  body: string;
-}) {
-  return (
-    <div className="max-w-2xl space-y-3">
-      <Badge variant="muted" className="w-fit">
-        {badge}
-      </Badge>
-      <h2 className="text-3xl font-semibold tracking-[-0.04em] text-foreground sm:text-4xl">
-        {title}
-      </h2>
-      <p className="text-base leading-7 text-muted-foreground sm:text-lg">
-        {body}
-      </p>
-    </div>
-  );
-}
-
-function PromptCard({
-  eyebrow,
-  title,
-  body,
-  prompt,
-}: {
-  eyebrow: string;
-  title: string;
-  body: string;
-  prompt: string;
-}) {
-  return (
-    <Card className="h-full">
-      <CardHeader className="pb-4">
-        <Badge variant="accent" className="w-fit">
-          {eyebrow}
-        </Badge>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{body}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="flex items-start justify-between gap-3 rounded-[1.3rem] border border-white/8 bg-black/30 px-4 py-4">
-          <div className="overflow-x-auto font-mono text-sm leading-7 text-neutral-300">
-            {prompt}
-          </div>
-          <CopyButton text={prompt} />
-        </div>
-      </CardContent>
-    </Card>
-  );
+function Divider() {
+  return <hr className="h-1 w-full rounded border-0 bg-neutral-800" />;
 }
 
 export default function Home() {
+  const installCommand =
+    "npx skills add ameyalambat128/token-receipt --skill token-receipt";
+  const repoInstallCommand = "bun install && bun run skill:install";
   const codexPrompt =
     "$token-receipt Generate a receipt for my last 30 days of agent usage.";
   const claudePrompt =
     "Use token-receipt to itemize my last 30 days of Codex, Claude Code, and Kiro CLI usage.";
+  const doctorCommand = "bun run -F token-receipt doctor";
+  const runtimeCommand =
+    "bun run -F token-receipt generate -- --provider all --since 30d --out ./token-receipt-output";
+  const installItems = [
+    { label: "skill", command: installCommand },
+    { label: "repo", command: repoInstallCommand },
+    { label: "doctor", command: doctorCommand },
+    { label: "runtime", command: runtimeCommand },
+  ];
 
   return (
-    <div className="relative">
+    <div className="relative min-h-screen overflow-x-hidden">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(structuredData),
+        }}
       />
-
-      <main className="mx-auto flex max-w-6xl flex-col gap-16 px-6 pb-24 pt-8 sm:gap-20 sm:pt-10 lg:px-8">
-        <header className="space-y-10">
-          <div className="flex items-center justify-between gap-4">
-            <Link
-              href="/"
-              className="font-mono text-sm uppercase tracking-[0.3em] text-foreground/88"
-            >
-              token-receipt
-            </Link>
+      <div className="mx-6 max-w-4xl lg:mx-auto">
+        <header className="py-16 lg:py-24">
+          <div className="flex items-center justify-between">
+            <h1 className="gradient-text text-3xl font-bold tracking-tight">
+              /token-receipt
+            </h1>
             <GitHubStars />
           </div>
 
-          <div className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-start">
-            <div className="space-y-8">
-              <div className="space-y-5">
-                <Badge variant="accent" className="w-fit">
-                  Codex, Claude Code, and Kiro CLI
-                </Badge>
-                <div className="space-y-4">
-                  <h1 className="max-w-4xl text-5xl font-semibold tracking-[-0.08em] text-foreground sm:text-6xl lg:text-7xl">
-                    Turn agent chaos into a receipt worth posting.
-                  </h1>
-                  <p className="max-w-2xl text-lg leading-8 text-muted-foreground sm:text-xl">
-                    Token Receipt reads the local logs your coding agents
-                    already write, prices the damage, and renders the whole
-                    thing as a sharp thermal-paper artifact with share-ready
-                    copy.
-                  </p>
-                </div>
-              </div>
+          <p className="mt-4 text-lg text-gray-100">
+            Your Agent Has Expenses.
+            <br className="hidden sm:block" />
+            Officially itemized for Codex, Claude Code, and Kiro CLI.
+          </p>
 
-              <div className="flex flex-wrap items-center gap-3">
-                <Button asChild size="lg">
-                  <Link
-                    href={repoUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    View GitHub
-                    <ArrowUpRight />
-                  </Link>
-                </Button>
-                <Button asChild variant="secondary" size="lg">
-                  <Link href="#install">
-                    Install the skill
-                    <ArrowRight />
-                  </Link>
-                </Button>
-              </div>
+          <p className="mt-6 leading-relaxed text-gray-400">
+            Token Receipt turns local agent logs into your coding-agent bill
+            with a thermal-paper PNG, share-ready post copy, and a skill-native
+            flow that works inside the tools people already use.
+          </p>
+          <p className="mt-4 text-sm text-gray-500">
+            Skill-first. Local-first. No extra model API in v1.
+          </p>
 
-              <p className="max-w-xl text-sm leading-6 text-muted-foreground">
-                Skill-first. Local-first. No extra model API in v1. Kiro spend
-                is computed from local credit usage rather than
-                reverse-engineered token math.
-              </p>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                {signalCards.map((item) => (
-                  <Card
-                    key={item.value}
-                    className="border-white/8 bg-white/[0.03]"
-                  >
-                    <CardHeader className="gap-2 pb-5">
-                      <CardTitle className="text-base">{item.value}</CardTitle>
-                      <CardDescription>{item.label}</CardDescription>
-                    </CardHeader>
-                  </Card>
-                ))}
-              </div>
-            </div>
-
-            <Card className="overflow-hidden border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]">
-              <CardHeader className="space-y-4 pb-5">
-                <Badge className="w-fit">What ships per run</Badge>
-                <div className="space-y-3">
-                  <CardTitle className="text-2xl tracking-[-0.04em]">
-                    A local runtime with receipts, analysis, and pricing
-                    provenance.
-                  </CardTitle>
-                  <CardDescription className="text-base">
-                    The runtime keeps the serious part inspectable and lets the
-                    host agent handle the in-session roast.
-                  </CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {outputCards.map((item) => (
-                  <div
-                    key={item.title}
-                    className="flex gap-4 rounded-[1.35rem] border border-white/8 bg-black/24 p-4"
-                  >
-                    <div className="mt-0.5 flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[color:var(--paper)] text-[color:var(--paper-ink)]">
-                      <item.icon className="size-5" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="font-mono text-sm uppercase tracking-[0.18em] text-foreground/90">
-                        {item.title}
-                      </p>
-                      <p className="text-sm leading-6 text-muted-foreground">
-                        {item.body}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-
-                <div className="rounded-[1.35rem] border border-[color:var(--accent-strong)]/20 bg-[color:var(--accent-strong)]/8 p-4 text-sm leading-6 text-neutral-200">
-                  <span className="font-semibold text-white">
-                    Pricing note:
-                  </span>{" "}
-                  Codex and Claude use refreshable provider pricing snapshots.
-                  Kiro uses local credits and multiplies them by the tracked
-                  $0.04 overage rate.
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div
-            id="install"
-            className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-start"
-          >
-            <InstallCommandPanel items={installItems} />
-            <Card className="overflow-hidden">
-              <CardHeader className="pb-4">
-                <Badge variant="muted" className="w-fit">
-                  Local proof
-                </Badge>
-                <CardTitle className="text-2xl tracking-[-0.04em]">
-                  The receipt is the artifact, not the dashboard.
-                </CardTitle>
-                <CardDescription className="text-base">
-                  Use the runtime directly, or invoke the installed skill from
-                  Codex or Claude Code and let it format the final response
-                  in-session.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[1.25rem] border border-white/8 bg-black/25 p-4">
-                    <p className="font-mono text-xs uppercase tracking-[0.22em] text-[color:var(--accent-soft)]">
-                      Runtime
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Generates analysis.json, receipt.json, receipt.png, and
-                      share copy in one local pass.
-                    </p>
-                  </div>
-                  <div className="rounded-[1.25rem] border border-white/8 bg-black/25 p-4">
-                    <p className="font-mono text-xs uppercase tracking-[0.22em] text-[color:var(--accent-soft)]">
-                      Skill
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Wraps the runtime so the host agent can read the artifacts
-                      and deliver the roast cleanly.
-                    </p>
-                  </div>
-                </div>
-                <div className="rounded-[1.35rem] border border-dashed border-white/10 bg-black/18 px-4 py-5">
-                  <div className="flex items-center gap-3">
-                    <Terminal className="size-4 text-[color:var(--accent-soft)]" />
-                    <p className="font-mono text-sm uppercase tracking-[0.18em] text-foreground/90">
-                      Doctor checks Kiro too
-                    </p>
-                  </div>
-                  <p className="mt-3 text-sm leading-6 text-muted-foreground">
-                    The doctor output now detects Kiro's local SQLite store,
-                    surfaces sample session IDs, and reports project directories
-                    alongside Codex and Claude diagnostics.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
+          <h2 className="gradient-text mb-4 mt-16 text-xl font-bold">
+            Install Token Receipt
+          </h2>
+          <InstallCommandPanel items={installItems} />
           <ProofStrip />
         </header>
 
-        <section className="space-y-8">
-          <SectionIntro
-            badge="Provider coverage"
-            title="One receipt format, three distinct agent sources."
-            body="The analysis pipeline stays shared, but the cost model is explicit about where each provider's numbers come from."
-          />
-
-          <div className="grid gap-5 lg:grid-cols-3">
-            {providerCards.map((provider) => (
-              <Card key={provider.name} className="h-full">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-2xl border border-white/8 bg-black/20">
-                      <Bot className="size-5 text-[color:var(--accent-soft)]" />
-                    </div>
-                    <CardTitle>{provider.name}</CardTitle>
-                  </div>
-                  <CardDescription>{provider.detail}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="rounded-[1.25rem] border border-white/8 bg-black/25 p-4 text-sm leading-6 text-muted-foreground">
-                    {provider.pricing}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-2">
-            <PromptCard
-              eyebrow="Codex prompt"
-              title="Invoke it directly inside Codex"
-              body="Codex can run the skill wrapper and then summarize the local receipt artifacts inside the active thread."
-              prompt={codexPrompt}
-            />
-            <PromptCard
-              eyebrow="Claude Code prompt"
-              title="Same loop for Claude Code"
-              body="Claude Code gets the same structured local analysis, including Kiro sessions when you run provider all."
-              prompt={claudePrompt}
-            />
-          </div>
-        </section>
-
-        <Separator />
-
-        <section className="space-y-8">
-          <SectionIntro
-            badge="Pricing references"
-            title="The site now says where the money math comes from."
-            body="Token Receipt does not hide the assumptions. It records the pricing metadata used for the run and keeps Kiro on a clear credit-based model."
-          />
-
-          <div className="grid gap-5 lg:grid-cols-[1.15fr_0.85fr]">
-            <Card className="h-full">
-              <CardHeader className="pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex size-10 items-center justify-center rounded-2xl bg-[color:var(--paper)] text-[color:var(--paper-ink)]">
-                    <BadgeDollarSign className="size-5" />
-                  </div>
-                  <CardTitle>
-                    analysis.json now records pricing metadata
-                  </CardTitle>
+        <main className="space-y-12">
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              Codex support
+            </h2>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              Token Receipt ships a Codex skill that can be invoked from the
+              thread with the exact workflow Codex already uses for skills. The
+              skill calls the local runtime, reads the structured analysis, and
+              then lets Codex write the final response in-session.
+            </p>
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-5 ring-1 ring-neutral-900">
+              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">
+                Codex prompt
+              </p>
+              <div className="mt-3 flex items-center justify-between gap-4">
+                <div className="overflow-x-auto text-sm font-mono text-gray-400">
+                  {codexPrompt}
                 </div>
-                <CardDescription>
-                  That lets the receipt explain which catalog snapshot or credit
-                  model it used instead of presenting spend as unexplained
-                  magic.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[1.25rem] border border-white/8 bg-black/25 p-4">
-                    <p className="font-mono text-xs uppercase tracking-[0.18em] text-[color:var(--accent-soft)]">
-                      Catalog refresh
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Run{" "}
-                      <span className="font-mono text-foreground">
-                        bun run pricing:refresh
-                      </span>{" "}
-                      to update Codex and Claude pricing inputs from provider
-                      pages.
-                    </p>
-                  </div>
-                  <div className="rounded-[1.25rem] border border-white/8 bg-black/25 p-4">
-                    <p className="font-mono text-xs uppercase tracking-[0.18em] text-[color:var(--accent-soft)]">
-                      Kiro formula
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Credits are summed from local usage_info entries and
-                      converted at $0.04 per extra credit.
-                    </p>
-                  </div>
-                </div>
-                <div className="rounded-[1.35rem] border border-dashed border-white/10 bg-black/18 px-4 py-5 text-sm leading-6 text-muted-foreground">
-                  Token counters for Kiro stay at zero when equivalent local
-                  token fields are not present. The existing waste-signal logic
-                  still uses planning turns, tool activity, repeated reads,
-                  repeated shell calls, and edits observed.
-                </div>
-              </CardContent>
-            </Card>
+                <CopyButton text={codexPrompt} />
+              </div>
+            </div>
+          </section>
 
-            <div className="grid gap-4">
-              {pricingSources.map((source) => (
-                <Card key={source.label}>
-                  <CardHeader className="pb-4">
-                    <CardTitle className="text-base">{source.label}</CardTitle>
-                    <CardDescription>{source.body}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <Button
-                      asChild
-                      variant="secondary"
-                      className="w-full justify-between"
-                    >
-                      <Link
-                        href={source.href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Open source
-                        <ArrowUpRight />
-                      </Link>
-                    </Button>
-                  </CardContent>
-                </Card>
+          <Divider />
+
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              Claude Code support
+            </h2>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              Claude Code gets the same skill-first flow: local parsing and
+              image generation happen in the runtime, and Claude writes the
+              final response using your existing session instead of a separate
+              API key.
+            </p>
+            <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-5 ring-1 ring-neutral-900">
+              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">
+                Claude Code prompt
+              </p>
+              <div className="mt-3 flex items-center justify-between gap-4">
+                <div className="overflow-x-auto text-sm font-mono text-gray-400">
+                  {claudePrompt}
+                </div>
+                <CopyButton text={claudePrompt} />
+              </div>
+            </div>
+          </section>
+
+          <Divider />
+
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              What is Token Receipt?
+            </h2>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              Token Receipt is a screenshot-first usage artifact for coding
+              agents.
+            </p>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              It reads the session logs that Codex, Claude Code, and Kiro CLI
+              already write locally, turns those into structured usage facts,
+              and lays them out as an itemized bill.
+            </p>
+            <p className="mb-6 leading-relaxed text-gray-400">
+              The result feels personal because it reflects your own habits:
+              repeated file reads, subagent sprawl, context bloat, and every
+              other expensive little ritual.
+            </p>
+            <ul className="list-inside list-disc space-y-1 text-gray-400">
+              <li>Reads local logs from Codex, Claude Code, and Kiro CLI</li>
+              <li>
+                Kiro spend uses local credit usage instead of token pricing
+              </li>
+              <li>Builds a thermal-paper PNG plus ready-to-edit post copy</li>
+              <li>Uses skills so the host agent can write the final roast</li>
+            </ul>
+          </section>
+
+          <Divider />
+
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              Kiro CLI session support
+            </h2>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              Kiro CLI is supported as a local session source. Token Receipt
+              reads the Kiro SQLite session store, extracts tool activity and
+              local credit usage, and folds that into the same receipt flow as
+              the other supported agents.
+            </p>
+            <p className="leading-relaxed text-gray-400">
+              Because Kiro does not expose the same local token counters here,
+              the Kiro portion of the bill uses local credit usage instead of a
+              token-derived API estimate.
+            </p>
+          </section>
+
+          <Divider />
+
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              Why this exists
+            </h2>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              The accurate observability product is not the point.
+            </p>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              The point is a screenshot people instantly understand: your coding
+              agent bill, officially itemized, with a line item for every bad
+              habit you already know you have.
+            </p>
+            <p className="leading-relaxed text-gray-400">
+              Real local signals make the output feel specific instead of
+              generic.
+            </p>
+          </section>
+
+          <Divider />
+
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              What it itemizes
+            </h2>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              V1 focuses on signals we can defend from the logs:
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                "Context window emotional support",
+                "Repeated file reads",
+                "Repeated shell confidence loops",
+                "MCP tool tourism",
+                "Subagent middle management",
+                "Planning before touching a file",
+                "Cache-heavy sessions",
+                "Low-output expensive runs",
+              ].map((item) => (
+                <div key={item} className="py-1 text-sm text-gray-400">
+                  {item}
+                </div>
               ))}
             </div>
-          </div>
-        </section>
+            <p className="mt-6 text-sm text-gray-600">
+              Every bill is derived from local agent logs.
+            </p>
+          </section>
 
-        <Separator />
+          <Divider />
 
-        <section className="space-y-8">
-          <SectionIntro
-            badge="How it works"
-            title="A simple pipeline with local inputs and opinionated outputs."
-            body="The app is intentionally narrow: read what the agents already wrote, calculate the bill, and package the result into artifacts people actually share."
-          />
-
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {workflowCards.map((item) => (
-              <Card key={item.title} className="h-full">
-                <CardHeader className="pb-4">
-                  <div className="flex size-11 items-center justify-center rounded-2xl border border-white/8 bg-black/20">
-                    <item.icon className="size-5 text-[color:var(--accent-soft)]" />
-                  </div>
-                  <CardTitle>{item.title}</CardTitle>
-                  <CardDescription>{item.body}</CardDescription>
-                </CardHeader>
-              </Card>
-            ))}
-          </div>
-        </section>
-
-        <Separator />
-
-        <section className="space-y-8">
-          <SectionIntro
-            badge="FAQ"
-            title="The obvious questions."
-            body="Mostly about privacy, pricing assumptions, and whether this thing is trying to become a dashboard."
-          />
-
-          <Accordion>
-            {faqItems.map((item) => (
-              <AccordionItem key={item.value} value={item.value}>
-                <AccordionTrigger>{item.question}</AccordionTrigger>
-                <AccordionContent>{item.answer}</AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        </section>
-
-        <footer className="rounded-[2rem] border border-white/10 bg-black/24 px-6 py-8 sm:px-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
-              <p className="font-mono text-xs uppercase tracking-[0.22em] text-[color:var(--accent-soft)]">
-                Token Receipt
-              </p>
-              <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-                A local, skill-first receipt generator for Codex, Claude Code,
-                and Kiro CLI. It exists because screenshots beat dashboards when
-                the story is half accounting and half self-own.
-              </p>
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              How it works
+            </h2>
+            <p className="mb-6 leading-relaxed text-gray-400">
+              Token Receipt is local parsing plus agent-native copywriting, not
+              a new hosted AI layer.
+            </p>
+            <div className="space-y-4">
+              <div className="flex gap-4">
+                <span className="font-mono text-gray-600">1.</span>
+                <p className="text-gray-400">
+                  The runtime scans local Codex, Claude Code, and Kiro CLI
+                  session logs
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <span className="font-mono text-gray-600">2.</span>
+                <p className="text-gray-400">
+                  Deterministic heuristics turn those logs into receipt facts
+                </p>
+              </div>
+              <div className="flex gap-4">
+                <span className="font-mono text-gray-600">3.</span>
+                <p className="text-gray-400">
+                  The skill asks Codex or Claude Code to phrase the final
+                  response using the session you are already paying for
+                </p>
+              </div>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <Button asChild variant="secondary">
-                <Link href={repoUrl} target="_blank" rel="noopener noreferrer">
-                  <GitHubIcon size={16} />
-                  Repository
-                </Link>
-              </Button>
-              <Button asChild>
-                <Link href="#install">
-                  Install now
-                  <ArrowRight />
-                </Link>
-              </Button>
+            <p className="mt-6 text-sm text-gray-600">
+              No prompt uploads by default. No telemetry in v1.
+            </p>
+          </section>
+
+          <Divider />
+
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              Who this is for
+            </h2>
+            <ul className="list-inside list-disc space-y-1 text-gray-400">
+              <li>
+                People shipping with Codex, Claude Code, or Kiro CLI every day
+              </li>
+              <li>
+                People who want Kiro CLI credits and tool detours in the same
+                receipt
+              </li>
+            </ul>
+          </section>
+
+          <Divider />
+
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              Open source
+            </h2>
+            <p className="mb-6 leading-relaxed text-gray-400">
+              MIT licensed and open source.
+            </p>
+            <div className="flex gap-4">
+              <Link
+                href="https://github.com/ameyalambat128/token-receipt"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-gray-400 transition-colors hover:text-white hover:underline"
+              >
+                GitHub repository
+              </Link>
             </div>
-          </div>
-        </footer>
-      </main>
+          </section>
+
+          <Divider />
+
+          <section className="pb-24">
+            <h2 className="gradient-text mb-4 text-xl font-bold">FAQ</h2>
+            <Accordion className="rounded-2xl border border-neutral-800 bg-neutral-950/60 px-5 ring-1 ring-neutral-900">
+              {faqItems.map((item) => (
+                <AccordionItem key={item.value} value={item.value}>
+                  <AccordionTrigger className="text-gray-200">
+                    {item.question}
+                  </AccordionTrigger>
+                  <AccordionContent className="leading-relaxed text-gray-400">
+                    {item.answer}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+
+            <div className="mt-10 flex flex-wrap gap-4 text-sm text-gray-500">
+              <Link
+                href="https://github.com/ameyalambat128/token-receipt"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 transition-colors hover:text-white"
+              >
+                <GitHubIcon size={16} />
+                GitHub
+              </Link>
+              <Link
+                href="https://x.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 transition-colors hover:text-white"
+              >
+                <XIcon size={16} />X
+              </Link>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
   );
 }
