@@ -8,6 +8,13 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import {
+  getKiroCreditRateUsd,
+  getPricingMetadata,
+  resolveClaudeFamilyPricing,
+  resolveCodexModelPricing,
+} from "./pricing.js";
+import type { AnalysisPricing } from "./pricing-types.js";
 
 export type Provider = "claude" | "codex" | "kiro";
 
@@ -102,6 +109,7 @@ export type Analysis = {
   generatedAt: string;
   options: CliOptions;
   providerNames: string[];
+  pricing: AnalysisPricing;
   totals: {
     sessions: number;
     inputTokens: number;
@@ -205,50 +213,6 @@ type SignalAccumulator = {
   context: number;
   idle: number;
 };
-
-const codexRates = {
-  input: 1.25,
-  cachedInput: 0.125,
-  output: 10,
-};
-
-const claudeRateCards = [
-  {
-    match: /opus-4-8|opus 4\.8|opus/i,
-    input: 5,
-    cacheRead: 0.5,
-    cacheWrite5m: 6.25,
-    cacheWrite1h: 10,
-    output: 25,
-  },
-  {
-    match: /sonnet-4|sonnet/i,
-    input: 3,
-    cacheRead: 0.3,
-    cacheWrite5m: 3.75,
-    cacheWrite1h: 6,
-    output: 15,
-  },
-  {
-    match: /haiku/i,
-    input: 0.8,
-    cacheRead: 0.08,
-    cacheWrite5m: 1,
-    cacheWrite1h: 1.6,
-    output: 4,
-  },
-];
-
-const fallbackClaudeRateCard = {
-  match: /fallback/,
-  input: 3,
-  cacheRead: 0.3,
-  cacheWrite5m: 3.75,
-  cacheWrite1h: 6,
-  output: 15,
-};
-
-const kiroCreditRateUsd = 0.04;
 
 export function defaultOptions(): CliOptions {
   const baseCwd = process.env.INIT_CWD ?? process.cwd();
@@ -413,6 +377,7 @@ export function analyzeLogs(options: CliOptions): Analysis {
   const topSignals = buildTopSignals(signalRollup);
   const generatedAt = new Date().toISOString();
   const providerNames = uniqueProviders(sessions);
+  const pricing = getPricingMetadata(providerNames);
   const filteredSessions = options.anonymize
     ? sessions.map((session) => ({
         ...session,
@@ -434,6 +399,7 @@ export function analyzeLogs(options: CliOptions): Analysis {
     generatedAt,
     options,
     providerNames,
+    pricing,
     totals,
     sessions: filteredSessions,
     topSignals,
@@ -604,15 +570,16 @@ function parseCodexFile(file: string): ParsedSession | null {
   }
 
   const project = projectPath || file;
+  const { rates } = resolveCodexModelPricing(model);
   const apiEquivalentCostUsd =
     perMillion(
       latestTotals.inputTokens - latestTotals.cachedInputTokens,
-      codexRates.input,
+      rates.input,
     ) +
-    perMillion(latestTotals.cachedInputTokens, codexRates.cachedInput) +
+    perMillion(latestTotals.cachedInputTokens, rates.cachedInput) +
     perMillion(
       latestTotals.outputTokens + latestTotals.reasoningTokens,
-      codexRates.output,
+      rates.output,
     );
 
   const session: ParsedSession = {
@@ -727,16 +694,14 @@ function parseClaudeFile(file: string): ParsedSession | null {
     }
   }
 
-  const rateCard =
-    claudeRateCards.find((card) => card.match.test(model)) ??
-    fallbackClaudeRateCard;
+  const { rates } = resolveClaudeFamilyPricing(model);
 
   const apiEquivalentCostUsd =
-    perMillion(inputTokens, rateCard.input) +
-    perMillion(cachedInputTokens, rateCard.cacheRead) +
-    perMillion(cacheCreation5mTokens, rateCard.cacheWrite5m) +
-    perMillion(cacheCreation1hTokens, rateCard.cacheWrite1h) +
-    perMillion(outputTokens, rateCard.output);
+    perMillion(inputTokens, rates.input) +
+    perMillion(cachedInputTokens, rates.cacheRead) +
+    perMillion(cacheCreation5mTokens, rates.cacheWrite5m) +
+    perMillion(cacheCreation1hTokens, rates.cacheWrite1h) +
+    perMillion(outputTokens, rates.output);
 
   const project = projectPath || file;
   const session: ParsedSession = {
@@ -855,7 +820,7 @@ function parseKiroRow(row: KiroSessionRow): ParsedSession | null {
     outputTokens: 0,
     reasoningTokens: 0,
     creditsUsed,
-    apiEquivalentCostUsd: creditsUsed * kiroCreditRateUsd,
+    apiEquivalentCostUsd: creditsUsed * getKiroCreditRateUsd(),
     functionCalls,
     toolSearchCalls: 0,
     readCalls: readCalls.length,
@@ -1430,7 +1395,7 @@ function stableStringify(input: unknown): string {
 
 function buildDemoAnalysis(options: CliOptions): Analysis {
   const generatedAt = new Date().toISOString();
-  const providerNames = ["codex", "claude"];
+  const providerNames: Provider[] = ["codex", "claude"];
   const totals = {
     sessions: 12,
     inputTokens: 1_285_000,
@@ -1478,6 +1443,7 @@ function buildDemoAnalysis(options: CliOptions): Analysis {
     generatedAt,
     options,
     providerNames,
+    pricing: getPricingMetadata(providerNames),
     totals,
     sessions: [],
     topSignals: receipt.lines
