@@ -101,6 +101,13 @@ describe("token receipt skill", () => {
       expect(analysis.options.seed).toBe("demo");
       expect(realpathSync(analysis.options.outDir)).toBe(realpathSync(outDir));
       expect(analysis.totals.apiEquivalentCostUsd).toBe(17.42);
+      expect(analysis.pricing.providerNames).toEqual(["codex", "claude"]);
+      expect(analysis.pricing.sources.codex.reference).toBe(
+        "https://developers.openai.com/api/docs/pricing",
+      );
+      expect(analysis.pricing.sources.claude.reference).toBe(
+        "https://platform.claude.com/docs/en/about-claude/pricing",
+      );
       expect(receipt.totalUsd).toBe(analysis.receipt.totalUsd);
       expect(receipt.totalUsd).toBeGreaterThan(
         analysis.totals.apiEquivalentCostUsd,

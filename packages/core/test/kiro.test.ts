@@ -133,6 +133,16 @@ describe("Kiro CLI support", () => {
           new Set(["codex", "claude", "kiro"]),
         );
         expect(analysis.totals.creditsUsed).toBeCloseTo(0.75, 6);
+        expect(analysis.pricing.providerNames).toEqual([
+          "codex",
+          "claude",
+          "kiro",
+        ]);
+        expect(Object.keys(analysis.pricing.sources)).toEqual([
+          "codex",
+          "claude",
+          "kiro",
+        ]);
         expect(analysis.totals.apiEquivalentCostUsd).toBeCloseTo(0.0366525, 8);
       } finally {
         restoreEnv("HOME", previousHome);
