@@ -1,6 +1,6 @@
 # /token-receipt
 
-Token Receipt turns Codex and Claude Code logs into your coding-agent bill.
+Token Receipt turns Codex, Claude Code, and Kiro CLI logs into your coding-agent bill.
 
 ## What is this?
 
@@ -8,7 +8,7 @@ Token Receipt is a skill-first local tool for people using coding agents heavily
 
 It parses local agent logs, scores the most defensible forms of waste, renders a thermal-paper receipt PNG, and generates share-ready post copy grounded in real local habits.
 
-- Skill-first UX for Codex and Claude Code
+- Skill-first UX for Codex and Claude Code, with Kiro CLI session support
 - Screenshot-first artifact for agent-heavy developers
 - Local parsing and local image generation
 - No separate model API required in v1
@@ -22,6 +22,7 @@ What works today:
 
 - Codex skill wrapper
 - Claude Code skill wrapper
+- Kiro CLI session parsing
 - Local runtime for parsing and rendering
 - Marketing site
 - macOS arm64 standalone runtime build
@@ -99,7 +100,7 @@ packages/runtime/dist/token-receipt-darwin-arm64.tar.gz
 1. The user invokes the Token Receipt skill in Codex or Claude Code.
 2. The wrapper script checks for a local installed runtime binary.
 3. If the runtime is missing, the installer downloads the macOS arm64 release artifact and installs it into Application Support.
-4. The runtime parses local Codex and Claude Code logs.
+4. The runtime parses local Codex, Claude Code, and Kiro CLI logs.
 5. It writes:
    - `analysis.json`
    - `receipt.json`
@@ -136,6 +137,16 @@ Run directly:
 ```bash
 ~/.claude/skills/token-receipt/scripts/generate.sh --since 30d
 ```
+
+### Kiro CLI session support
+
+Kiro CLI sessions are detected from:
+
+```text
+~/Library/Application Support/kiro-cli/data.sqlite3
+```
+
+Kiro does not expose the same local token counters as Codex and Claude Code in this tool, so Token Receipt prices Kiro usage from local `usage_info` credits at the published `$0.04` per credit overage rate.
 
 ### Force a runtime refresh
 
@@ -210,7 +221,7 @@ Release assets:
 
 ## Who this is for
 
-- People using Codex or Claude Code daily
+- People using Codex, Claude Code, or Kiro CLI daily
 - Developers who want a funny but grounded snapshot of agent habits
 - People posting receipts, screenshots, or launch content about coding-agent workflows
 - Anyone who wants a local-first artifact instead of a hosted dashboard

@@ -35,6 +35,8 @@ Claude Code:
 ~/.claude/skills/token-receipt/scripts/generate.sh --since 30d
 ```
 
+Kiro CLI logs are also included automatically when you run the runtime with `--provider kiro` or `--provider all`. Kiro spend is based on local credit usage rather than token-derived API pricing.
+
 Force a fresh runtime install:
 
 ```bash

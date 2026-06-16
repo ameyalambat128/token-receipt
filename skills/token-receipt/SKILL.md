@@ -1,6 +1,6 @@
 ---
 name: token-receipt
-description: Generate a coding-agent bill from recent Codex and Claude Code logs. Use when the user asks for a token receipt, AI bill, satire receipt, or shareable roast of their agent usage.
+description: Generate a coding-agent bill from recent Codex, Claude Code, and Kiro CLI logs. Use when the user asks for a token receipt, AI bill, satire receipt, or shareable roast of their agent usage.
 metadata:
   openclaw:
     os: ["darwin"]
@@ -42,6 +42,7 @@ Examples:
 ```bash
 scripts/generate.sh --provider codex --since 7d
 scripts/generate.sh --provider claude --since 7d
+scripts/generate.sh --provider kiro --since 7d
 scripts/generate.sh --project whoop-am --since 30d
 scripts/generate.sh --update-runtime --since 30d
 ```
@@ -50,4 +51,5 @@ scripts/generate.sh --update-runtime --since 30d
 
 - Keep the response grounded in the generated `analysis.json`.
 - Treat the dollar amounts as satire, not literal billing.
+- Kiro cost is based on local credit usage, not token-derived API pricing.
 - Do not paste raw prompts or code from the source logs unless the user explicitly asks.

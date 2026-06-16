@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const siteUrl = "https://tokenreceipt.ameyalambat.com";
 const productName = "Token Receipt";
 const productDescription =
-  "Token Receipt turns your Codex and Claude Code logs into your coding-agent bill, complete with a thermal-paper PNG and share-ready post copy.";
+  "Token Receipt turns your Codex, Claude Code, and Kiro CLI logs into your coding-agent bill, complete with a thermal-paper PNG and share-ready post copy.";
 const googleSiteVerification = process.env.GOOGLE_SITE_VERIFICATION;
 
 const ibmPlexSans = IBM_Plex_Sans({
@@ -25,6 +25,7 @@ export const metadata: Metadata = {
     "Token Receipt",
     "Codex",
     "Claude Code",
+    "Kiro CLI",
     "AI bill",
     "satire",
     "skills",

@@ -2,7 +2,7 @@
 
 ## Repo Summary
 
-Token Receipt is a skill-first local tool that turns Codex and Claude Code logs into a satirical AI expense receipt.
+Token Receipt is a skill-first local tool that turns Codex, Claude Code, and Kiro CLI logs into a satirical AI expense receipt.
 
 Primary surfaces:
 
@@ -71,7 +71,7 @@ This is the agent-compatible text version of the current install and execution f
 5. If the binary is missing, install-runtime.sh downloads the macOS arm64 release archive,
    extracts it, installs the binary, and records install.json metadata.
 6. The runtime binary runs locally and:
-   - parses Codex and Claude Code logs
+   - parses Codex, Claude Code, and Kiro CLI logs
    - writes analysis.json
    - writes receipt.json
    - writes receipt.png
