@@ -8,7 +8,8 @@
   },
   "scripts": {
     "format": "prettier --write \"src/**/*.ts\"",
-    "check": "tsc --noEmit",
+    "test": "bun test",
+    "check": "bun run test && tsc --noEmit",
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {

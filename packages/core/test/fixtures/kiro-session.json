@@ -1,0 +1,122 @@
+{
+  "conversation_id": "kiro-session-1",
+  "history": [
+    {
+      "user": {
+        "env_context": {
+          "env_state": {
+            "current_working_directory": "/Users/kiro/fallback-project"
+          }
+        }
+      },
+      "assistant": {
+        "ToolUse": {
+          "content": "Checking the file and running tests",
+          "tool_uses": [
+            {
+              "name": "Read",
+              "args": {
+                "path": "src/app.ts"
+              }
+            },
+            {
+              "name": "Bash",
+              "args": {
+                "command": "bun test"
+              }
+            }
+          ]
+        }
+      },
+      "request_metadata": {
+        "model_id": "kiro-claude-opus-4.8"
+      }
+    },
+    {
+      "assistant": {
+        "ToolUse": {
+          "content": "Retrying after inspecting the same file",
+          "tool_uses": [
+            {
+              "name": "Read",
+              "args": {
+                "path": "src/app.ts"
+              }
+            },
+            {
+              "name": "Bash",
+              "args": {
+                "command": "bun test"
+              }
+            },
+            {
+              "name": "Edit",
+              "args": {
+                "file_path": "src/app.ts"
+              }
+            }
+          ]
+        }
+      },
+      "request_metadata": {
+        "model_id": "kiro-claude-sonnet-4.6"
+      }
+    },
+    {
+      "assistant": {
+        "Response": {
+          "content": "Plan is locked in. Applying the fix now."
+        }
+      },
+      "request_metadata": {
+        "model_id": "kiro-claude-sonnet-4.6"
+      }
+    },
+    {
+      "assistant": {
+        "ToolUse": {
+          "content": "Writing files and delegating one last task",
+          "tool_uses": [
+            {
+              "name": "Task",
+              "args": {
+                "task": "verify the change"
+              }
+            },
+            {
+              "name": "Write",
+              "args": {
+                "path": "notes.md"
+              }
+            },
+            {
+              "name": "MultiEdit",
+              "args": {
+                "path": "src/app.ts"
+              }
+            }
+          ]
+        }
+      },
+      "request_metadata": {
+        "model_id": "kiro-claude-sonnet-4.6"
+      }
+    }
+  ],
+  "user_turn_metadata": {
+    "usage_info": [
+      {
+        "unit": "credit",
+        "value": 0.5
+      },
+      {
+        "unit": "credit",
+        "value": 0.25
+      },
+      {
+        "unit": "token",
+        "value": 1200
+      }
+    ]
+  }
+}

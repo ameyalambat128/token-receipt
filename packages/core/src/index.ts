@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { basename, isAbsolute, join } from "node:path";
 import {
   existsSync,
@@ -8,7 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 
-export type Provider = "claude" | "codex";
+export type Provider = "claude" | "codex" | "kiro";
 
 export type CliOptions = {
   provider: Provider | "all";
@@ -39,6 +40,7 @@ export type ParsedSession = {
   cacheCreation1hTokens: number;
   outputTokens: number;
   reasoningTokens: number;
+  creditsUsed: number;
   apiEquivalentCostUsd: number;
   functionCalls: number;
   toolSearchCalls: number;
@@ -108,6 +110,7 @@ export type Analysis = {
     cacheCreation1hTokens: number;
     outputTokens: number;
     reasoningTokens: number;
+    creditsUsed: number;
     apiEquivalentCostUsd: number;
   };
   sessions: ParsedSession[];
@@ -144,6 +147,52 @@ type ClaudeLine = {
       };
     };
     content?: Array<Record<string, unknown>>;
+  };
+};
+
+type KiroSessionRow = {
+  conversationId: string;
+  projectPath: string;
+  createdAtMs: number;
+  updatedAtMs: number;
+  payload: KiroSessionPayload;
+};
+
+type KiroSessionPayload = {
+  user_turn_metadata?: {
+    usage_info?: Array<{
+      unit?: string;
+      value?: number;
+    }>;
+  };
+  history?: KiroHistoryEntry[];
+};
+
+type KiroHistoryEntry = {
+  user?: {
+    env_context?: {
+      env_state?: {
+        current_working_directory?: string;
+      };
+    };
+  };
+  assistant?: {
+    ToolUse?: {
+      content?: string;
+      tool_uses?: Array<{
+        name?: string;
+        args?: Record<string, unknown>;
+      }>;
+    };
+    TextResponse?: {
+      content?: string;
+    };
+    Response?: {
+      content?: string;
+    };
+  };
+  request_metadata?: {
+    model_id?: string;
   };
 };
 
@@ -199,6 +248,8 @@ const fallbackClaudeRateCard = {
   output: 15,
 };
 
+const kiroCreditRateUsd = 0.04;
+
 export function defaultOptions(): CliOptions {
   const baseCwd = process.env.INIT_CWD ?? process.cwd();
 
@@ -227,7 +278,12 @@ export function parseArgs(argv: string[]): {
     const next = rest[index + 1];
 
     if (flag === "--provider" && next) {
-      if (next === "claude" || next === "codex" || next === "all") {
+      if (
+        next === "claude" ||
+        next === "codex" ||
+        next === "kiro" ||
+        next === "all"
+      ) {
         options.provider = next;
       }
       index += 1;
@@ -278,6 +334,9 @@ export function analyzeLogs(options: CliOptions): Analysis {
     ...(options.provider === "all" || options.provider === "claude"
       ? parseClaudeSessions(options)
       : []),
+    ...(options.provider === "all" || options.provider === "kiro"
+      ? parseKiroSessions(options)
+      : []),
   ].sort((left, right) =>
     (left.endedAt ?? "").localeCompare(right.endedAt ?? ""),
   );
@@ -300,6 +359,7 @@ export function analyzeLogs(options: CliOptions): Analysis {
         aggregate.cacheCreation1hTokens + session.cacheCreation1hTokens,
       outputTokens: aggregate.outputTokens + session.outputTokens,
       reasoningTokens: aggregate.reasoningTokens + session.reasoningTokens,
+      creditsUsed: aggregate.creditsUsed + session.creditsUsed,
       apiEquivalentCostUsd:
         aggregate.apiEquivalentCostUsd + session.apiEquivalentCostUsd,
     }),
@@ -311,6 +371,7 @@ export function analyzeLogs(options: CliOptions): Analysis {
       cacheCreation1hTokens: 0,
       outputTokens: 0,
       reasoningTokens: 0,
+      creditsUsed: 0,
       apiEquivalentCostUsd: 0,
     },
   );
@@ -402,6 +463,8 @@ export function writeAnalysis(analysis: Analysis, outDir: string) {
 export function doctor(options: CliOptions) {
   const codexFiles = detectCodexFiles();
   const claudeFiles = detectClaudeFiles();
+  const kiroSessions = detectKiroSessionRows();
+  const kiroDb = getKiroDbPath();
 
   return {
     provider: options.provider,
@@ -414,6 +477,15 @@ export function doctor(options: CliOptions) {
       detected: claudeFiles.length > 0,
       path: join(homeDir(), ".claude", "projects"),
       files: claudeFiles.slice(-3),
+    },
+    kiro: {
+      detected: kiroSessions.length > 0,
+      path: kiroDb,
+      sqlite3Available: canUseSqlite3(),
+      sessions: kiroSessions.slice(0, 3).map((session) => ({
+        conversationId: session.conversationId,
+        projectPath: session.projectPath,
+      })),
     },
   };
 }
@@ -428,6 +500,13 @@ function parseCodexSessions(options: CliOptions) {
 function parseClaudeSessions(options: CliOptions) {
   return detectClaudeFiles()
     .map((file) => parseClaudeFile(file))
+    .filter((session): session is ParsedSession => session !== null)
+    .filter((session) => applyFilters(session, options));
+}
+
+function parseKiroSessions(options: CliOptions) {
+  return detectKiroSessionRows()
+    .map((row) => parseKiroRow(row))
     .filter((session): session is ParsedSession => session !== null)
     .filter((session) => applyFilters(session, options));
 }
@@ -550,6 +629,7 @@ function parseCodexFile(file: string): ParsedSession | null {
     cacheCreation1hTokens: 0,
     outputTokens: latestTotals.outputTokens,
     reasoningTokens: latestTotals.reasoningTokens,
+    creditsUsed: 0,
     apiEquivalentCostUsd,
     functionCalls,
     toolSearchCalls,
@@ -673,7 +753,109 @@ function parseClaudeFile(file: string): ParsedSession | null {
     cacheCreation1hTokens,
     outputTokens,
     reasoningTokens: 0,
+    creditsUsed: 0,
     apiEquivalentCostUsd,
+    functionCalls,
+    toolSearchCalls: 0,
+    readCalls: readCalls.length,
+    shellCalls: shellCalls.length,
+    subagentCalls,
+    repeatedReadCalls: Math.max(0, readCalls.length - readTargets.size),
+    repeatedShellCalls: Math.max(0, shellCalls.length - shellCommands.size),
+    planningMessages,
+    editsObserved,
+    wasteSignals: [],
+  };
+
+  session.wasteSignals = deriveWasteSignals(session);
+  return session;
+}
+
+function parseKiroRow(row: KiroSessionRow): ParsedSession | null {
+  const history = row.payload.history ?? [];
+  const readTargets = new Set<string>();
+  const readCalls: string[] = [];
+  const shellCommands = new Set<string>();
+  const shellCalls: string[] = [];
+  let model = "kiro-auto";
+  let projectPath = row.projectPath;
+  let functionCalls = 0;
+  let subagentCalls = 0;
+  let planningMessages = 0;
+  let editsObserved = 0;
+
+  for (const entry of history) {
+    const cwd =
+      entry.user?.env_context?.env_state?.current_working_directory?.trim() ??
+      "";
+    if (!projectPath && cwd) {
+      projectPath = cwd;
+    }
+
+    const nextModel = entry.request_metadata?.model_id?.trim();
+    if (nextModel) {
+      model = nextModel;
+    }
+
+    const assistant = entry.assistant;
+    if (!assistant) continue;
+
+    const toolUse = assistant.ToolUse;
+    if (toolUse?.tool_uses?.length) {
+      for (const tool of toolUse.tool_uses) {
+        functionCalls += 1;
+        const name = String(tool.name ?? "");
+        const args = tool.args ?? {};
+
+        if (isKiroReadTool(name)) {
+          const target = normalizeKiroReadTarget(args);
+          readCalls.push(target);
+          readTargets.add(target);
+        }
+
+        if (isKiroShellTool(name)) {
+          const command = normalizeKiroShellCommand(args);
+          shellCalls.push(command);
+          shellCommands.add(command);
+        }
+
+        if (isKiroSubagentTool(name)) {
+          subagentCalls += 1;
+        }
+
+        if (isKiroEditTool(name)) {
+          editsObserved += 1;
+        }
+      }
+      continue;
+    }
+
+    const text =
+      assistant.TextResponse?.content?.trim() ??
+      assistant.Response?.content?.trim() ??
+      "";
+    if (text) {
+      planningMessages += 1;
+    }
+  }
+
+  const creditsUsed = extractKiroCredits(row.payload);
+  const session: ParsedSession = {
+    provider: "kiro",
+    sourceFile: getKiroDbPath(),
+    projectPath: projectPath || row.conversationId,
+    projectName: basename(projectPath || row.conversationId),
+    startedAt: formatKiroTimestamp(row.createdAtMs),
+    endedAt: formatKiroTimestamp(row.updatedAtMs),
+    model,
+    inputTokens: 0,
+    cachedInputTokens: 0,
+    cacheCreation5mTokens: 0,
+    cacheCreation1hTokens: 0,
+    outputTokens: 0,
+    reasoningTokens: 0,
+    creditsUsed,
+    apiEquivalentCostUsd: creditsUsed * kiroCreditRateUsd,
     functionCalls,
     toolSearchCalls: 0,
     readCalls: readCalls.length,
@@ -940,20 +1122,20 @@ function buildShareCopy(receipt: Receipt) {
     x: [
       `I spent $${formatUsd(receipt.totalUsd)} of imaginary agent money this month.`,
       topWaste ? `Biggest line item: ${topWaste.label}.` : null,
-      "Generated from my local Codex and Claude Code logs.",
+      "Generated from my local Codex, Claude Code, and Kiro CLI logs.",
       "satirical estimate based on local agent logs",
     ]
-      .filter(Boolean)
+      .filter((line): line is string => Boolean(line))
       .join("\n"),
     linkedin: [
       `This month my coding-agent bill came out to $${formatUsd(receipt.totalUsd)} in completely unserious but annoyingly plausible expenses.`,
       topWaste
         ? `The biggest offender was ${topWaste.label.toLowerCase()}.`
         : null,
-      "Token Receipt turns local Codex and Claude Code logs into a satirical receipt, a thermal-paper PNG, and share-ready copy.",
+      "Token Receipt turns local Codex, Claude Code, and Kiro CLI logs into a satirical receipt, a thermal-paper PNG, and share-ready copy.",
       "satirical estimate based on local agent logs",
     ]
-      .filter(Boolean)
+      .filter((line): line is string => Boolean(line))
       .join("\n\n"),
   };
 }
@@ -966,6 +1148,38 @@ function detectClaudeFiles() {
   return walkJsonl(join(homeDir(), ".claude", "projects")).filter(
     (file) => !file.includes("/subagents/"),
   );
+}
+
+function detectKiroSessionRows() {
+  const dbPath = getKiroDbPath();
+  if (!existsSync(dbPath)) return [];
+
+  const rows = runSqlite3Query(
+    dbPath,
+    "SELECT conversation_id, key, created_at, updated_at, hex(value) FROM conversations_v2 ORDER BY updated_at DESC",
+  );
+
+  return rows
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      const [conversationId, projectPath = "", createdAt, updatedAt, hex = ""] =
+        line.split("\t");
+      const payload = parseKiroPayload(hex);
+
+      if (!conversationId || !payload) {
+        return null;
+      }
+
+      return {
+        conversationId,
+        projectPath,
+        createdAtMs: Number(createdAt) || 0,
+        updatedAtMs: Number(updatedAt) || 0,
+        payload,
+      } satisfies KiroSessionRow;
+    })
+    .filter((row): row is KiroSessionRow => row !== null);
 }
 
 function walkJsonl(root: string) {
@@ -1003,8 +1217,31 @@ function readJsonLines<T>(file: string) {
     .filter((line): line is T => line !== null);
 }
 
+function runSqlite3Query(dbPath: string, query: string) {
+  try {
+    return execFileSync("sqlite3", ["-separator", "\t", dbPath, query], {
+      encoding: "utf8",
+    }).trim();
+  } catch (error) {
+    if (
+      existsSync(dbPath) &&
+      error &&
+      typeof error === "object" &&
+      "code" in error &&
+      error.code === "ENOENT"
+    ) {
+      throw new Error(
+        `Kiro CLI sessions were found at ${dbPath}, but the \`sqlite3\` CLI is not installed. Install \`sqlite3\` to analyze Kiro sessions.`,
+      );
+    }
+    throw error;
+  }
+}
+
 function uniqueProviders(sessions: ParsedSession[]) {
-  return [...new Set(sessions.map((session) => session.provider))];
+  return [
+    ...new Set(sessions.map((session) => session.provider)),
+  ] as Provider[];
 }
 
 function applyFilters(session: ParsedSession, options: CliOptions) {
@@ -1080,6 +1317,117 @@ function homeDir() {
   return process.env.HOME ?? process.env.USERPROFILE ?? "";
 }
 
+function getKiroDbPath() {
+  return (
+    process.env.TOKEN_RECEIPT_KIRO_DB_PATH ??
+    join(
+      homeDir(),
+      "Library",
+      "Application Support",
+      "kiro-cli",
+      "data.sqlite3",
+    )
+  );
+}
+
+function canUseSqlite3() {
+  try {
+    execFileSync("sqlite3", ["-version"], { encoding: "utf8" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function parseKiroPayload(hex: string) {
+  if (!hex) return null;
+
+  try {
+    return JSON.parse(
+      Buffer.from(hex, "hex").toString("utf8"),
+    ) as KiroSessionPayload;
+  } catch {
+    return null;
+  }
+}
+
+function extractKiroCredits(payload: KiroSessionPayload) {
+  return (payload.user_turn_metadata?.usage_info ?? []).reduce((sum, item) => {
+    if (item.unit !== "credit") return sum;
+    return sum + (item.value ?? 0);
+  }, 0);
+}
+
+function formatKiroTimestamp(value: number) {
+  if (!value) return null;
+  return new Date(value).toISOString();
+}
+
+function isKiroReadTool(name: string) {
+  return /^(read|open)$/i.test(name);
+}
+
+function isKiroShellTool(name: string) {
+  return /^(bash|command|exec)$/i.test(name);
+}
+
+function isKiroSubagentTool(name: string) {
+  return /^(task|spawn|agent)$/i.test(name);
+}
+
+function isKiroEditTool(name: string) {
+  return /^(write|edit|multiedit)$/i.test(name);
+}
+
+function normalizeKiroReadTarget(args: Record<string, unknown>) {
+  return (
+    firstKiroString(args, [
+      "path",
+      "file_path",
+      "filePath",
+      "target_file",
+      "target",
+      "uri",
+    ]) ?? stableStringify(args)
+  );
+}
+
+function normalizeKiroShellCommand(args: Record<string, unknown>) {
+  return (
+    firstKiroString(args, ["command", "cmd", "script", "input"]) ??
+    stableStringify(args)
+  );
+}
+
+function firstKiroString(
+  args: Record<string, unknown>,
+  keys: string[],
+): string | null {
+  for (const key of keys) {
+    const value = args[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim();
+    }
+  }
+
+  return null;
+}
+
+function stableStringify(input: unknown): string {
+  if (Array.isArray(input)) {
+    return `[${input.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  if (input && typeof input === "object") {
+    return `{${Object.entries(input as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, value]) => `${JSON.stringify(key)}:${stableStringify(value)}`)
+      .join(",")}}`;
+  }
+
+  return JSON.stringify(input);
+}
+
 function buildDemoAnalysis(options: CliOptions): Analysis {
   const generatedAt = new Date().toISOString();
   const providerNames = ["codex", "claude"];
@@ -1091,6 +1439,7 @@ function buildDemoAnalysis(options: CliOptions): Analysis {
     cacheCreation1hTokens: 0,
     outputTokens: 44_000,
     reasoningTokens: 6_200,
+    creditsUsed: 0,
     apiEquivalentCostUsd: 17.42,
   };
   const topSignals = [
