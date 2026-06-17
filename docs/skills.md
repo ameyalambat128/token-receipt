@@ -19,20 +19,24 @@ bun install
 bun run skill:install
 ```
 
+Repo-local install uses `~/.agents/skills/token-receipt` as the canonical local skill and links the Codex, Claude Code, and Kiro skill directories back to it. When `KIRO_HOME` is set, the installer also writes a Kiro link into `$KIRO_HOME/skills/token-receipt`.
+
 The installed skill bootstraps a standalone macOS arm64 runtime into `~/Library/Application Support/token-receipt/bin/token-receipt`. Download caches live in `~/Library/Caches/token-receipt/`.
 
 ## Usage
 
-Codex:
+Canonical local path:
+
+```bash
+~/.agents/skills/token-receipt/scripts/generate.sh --since 30d
+```
+
+Agent-facing links:
 
 ```bash
 ~/.codex/skills/token-receipt/scripts/generate.sh --since 30d
-```
-
-Claude Code:
-
-```bash
 ~/.claude/skills/token-receipt/scripts/generate.sh --since 30d
+~/.kiro/skills/token-receipt/scripts/generate.sh --since 30d
 ```
 
 Kiro CLI logs are also included automatically when you run the runtime with `--provider kiro` or `--provider all`. Kiro spend is based on local credit usage rather than token-derived API pricing.
@@ -40,7 +44,7 @@ Kiro CLI logs are also included automatically when you run the runtime with `--p
 Force a fresh runtime install:
 
 ```bash
-~/.codex/skills/token-receipt/scripts/generate.sh --update-runtime --since 30d
+~/.agents/skills/token-receipt/scripts/generate.sh --update-runtime --since 30d
 ```
 
 Deterministic smoke test during repo development:

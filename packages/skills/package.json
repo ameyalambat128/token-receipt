@@ -5,8 +5,9 @@
   "private": true,
   "scripts": {
     "format": "prettier --write \"../../skills/token-receipt/**/*.{md,json}\"",
-    "check": "bash ./check.sh",
+    "check": "bash ./check.sh && bun test ./install-layout.test.ts",
     "check-types": "bash ./check.sh",
+    "test:install-layout": "bun test ./install-layout.test.ts",
     "test:skill-smoke": "bun test ./skill-smoke.test.ts"
   }
 }
