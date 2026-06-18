@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { basename, isAbsolute, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   existsSync,
   mkdirSync,
@@ -9,7 +10,7 @@ import {
   writeFileSync,
 } from "node:fs";
 
-export type Provider = "claude" | "codex" | "kiro";
+export type Provider = "claude" | "codex" | "cursor" | "kiro";
 
 export type CliOptions = {
   provider: Provider | "all";
@@ -196,6 +197,50 @@ type KiroHistoryEntry = {
   };
 };
 
+type CursorGeneration = {
+  unixMs?: number;
+  generationUUID?: string;
+  type?: string;
+  textDescription?: string;
+};
+
+type CursorComposerData = {
+  selectedComposerIds?: string[];
+  lastFocusedComposerIds?: string[];
+};
+
+type CursorWorkspaceEntry = {
+  storagePath: string;
+  dbPath: string;
+  projectPath: string;
+};
+
+type CursorWorkspace = CursorWorkspaceEntry & {
+  composerIds: string[];
+  generations: CursorGeneration[];
+};
+
+type CursorTraceEvent = {
+  timestamp: string;
+  event: string;
+  name: string;
+  requestId: string | null;
+  composerId: string | null;
+};
+
+type CursorRequestMetrics = {
+  composerId: string | null;
+  endedAt: string | null;
+  functionCalls: number;
+  readCalls: number;
+  requestId: string;
+  shellCalls: number;
+  sourceFile: string;
+  startedAt: string | null;
+  thinkingMessages: number;
+  toolSearchCalls: number;
+};
+
 type SignalAccumulator = {
   repeatedReads: number;
   repeatedShells: number;
@@ -281,6 +326,7 @@ export function parseArgs(argv: string[]): {
       if (
         next === "claude" ||
         next === "codex" ||
+        next === "cursor" ||
         next === "kiro" ||
         next === "all"
       ) {
@@ -333,6 +379,9 @@ export function analyzeLogs(options: CliOptions): Analysis {
       : []),
     ...(options.provider === "all" || options.provider === "claude"
       ? parseClaudeSessions(options)
+      : []),
+    ...(options.provider === "all" || options.provider === "cursor"
+      ? parseCursorSessions(options)
       : []),
     ...(options.provider === "all" || options.provider === "kiro"
       ? parseKiroSessions(options)
@@ -463,6 +512,8 @@ export function writeAnalysis(analysis: Analysis, outDir: string) {
 export function doctor(options: CliOptions) {
   const codexFiles = detectCodexFiles();
   const claudeFiles = detectClaudeFiles();
+  const cursorWorkspaces = detectCursorWorkspaceEntries();
+  const cursorTraceFiles = detectCursorTraceFiles();
   const kiroSessions = detectKiroSessionRows();
   const kiroDb = getKiroDbPath();
 
@@ -477,6 +528,19 @@ export function doctor(options: CliOptions) {
       detected: claudeFiles.length > 0,
       path: join(homeDir(), ".claude", "projects"),
       files: claudeFiles.slice(-3),
+    },
+    cursor: {
+      detected: cursorWorkspaces.length > 0 || cursorTraceFiles.length > 0,
+      path: getCursorRootPath(),
+      workspaceStoragePath: getCursorWorkspaceStoragePath(),
+      sqlite3Available: canUseSqlite3(),
+      experimental: true,
+      caveat:
+        "Local Cursor support is experimental and currently emphasizes behavioral analysis over spend-faithful accounting.",
+      workspaces: cursorWorkspaces.slice(0, 3).map((workspace) => ({
+        projectPath: workspace.projectPath,
+      })),
+      traceFiles: cursorTraceFiles.slice(-3),
     },
     kiro: {
       detected: kiroSessions.length > 0,
@@ -502,6 +566,12 @@ function parseClaudeSessions(options: CliOptions) {
     .map((file) => parseClaudeFile(file))
     .filter((session): session is ParsedSession => session !== null)
     .filter((session) => applyFilters(session, options));
+}
+
+function parseCursorSessions(options: CliOptions) {
+  return buildCursorSessions().filter((session) =>
+    applyFilters(session, options),
+  );
 }
 
 function parseKiroSessions(options: CliOptions) {
@@ -771,6 +841,150 @@ function parseClaudeFile(file: string): ParsedSession | null {
   return session;
 }
 
+function buildCursorSessions() {
+  const workspaces = detectCursorWorkspaceEntries().map(loadCursorWorkspace);
+  const traceFiles = detectCursorTraceFiles();
+
+  if (!workspaces.length || !traceFiles.length) {
+    return [];
+  }
+
+  const workspaceByRequestId = new Map<string, CursorWorkspace>();
+  workspaces.forEach((workspace) => {
+    workspace.generations.forEach((generation) => {
+      if (
+        generation.type === "composer" &&
+        generation.generationUUID &&
+        !workspaceByRequestId.has(generation.generationUUID)
+      ) {
+        workspaceByRequestId.set(generation.generationUUID, workspace);
+      }
+    });
+  });
+
+  const requests = new Map<string, CursorRequestMetrics>();
+
+  traceFiles.forEach((file) => {
+    readFileSync(file, "utf8")
+      .split("\n")
+      .map(parseCursorTraceEvent)
+      .filter((event): event is CursorTraceEvent => event !== null)
+      .forEach((event) => {
+        if (!event.requestId) return;
+
+        const request = requests.get(event.requestId) ?? {
+          composerId: null,
+          endedAt: null,
+          functionCalls: 0,
+          readCalls: 0,
+          requestId: event.requestId,
+          shellCalls: 0,
+          sourceFile: file,
+          startedAt: null,
+          thinkingMessages: 0,
+          toolSearchCalls: 0,
+        };
+
+        request.composerId = event.composerId ?? request.composerId;
+        request.startedAt = minTimestamp(request.startedAt, event.timestamp);
+        request.endedAt = maxTimestamp(request.endedAt, event.timestamp);
+
+        if (event.event === "span_started") {
+          if (event.name === "AgentResponseAdapter.toolCallStarted") {
+            request.functionCalls += 1;
+          }
+
+          if (event.name === "LocalReadExecutor.execute") {
+            request.readCalls += 1;
+          }
+
+          if (event.name === "LocalGrepExecutor.execute") {
+            request.toolSearchCalls += 1;
+          }
+
+          if (event.name === "AgentResponseAdapter.thinkingCompleted") {
+            request.thinkingMessages += 1;
+          }
+        }
+
+        requests.set(event.requestId, request);
+      });
+  });
+
+  const sessions = new Map<string, ParsedSession>();
+
+  [...requests.values()]
+    .map((request) => {
+      const workspace =
+        workspaceByRequestId.get(request.requestId) ??
+        inferCursorWorkspaceFromComposerId(workspaces, request.composerId) ??
+        (workspaces.length === 1 ? workspaces[0] : null);
+
+      if (!workspace) return null;
+
+      return { request, workspace };
+    })
+    .filter(
+      (
+        entry,
+      ): entry is {
+        request: CursorRequestMetrics;
+        workspace: CursorWorkspace;
+      } => entry !== null,
+    )
+    .forEach(({ request, workspace }) => {
+      const sessionKey = [
+        workspace.projectPath,
+        request.composerId ?? request.requestId,
+      ].join("::");
+      const existing = sessions.get(sessionKey) ?? {
+        provider: "cursor" as const,
+        sourceFile: request.sourceFile,
+        projectPath: workspace.projectPath,
+        projectName: basename(workspace.projectPath),
+        startedAt: null,
+        endedAt: null,
+        model: "cursor-composer-unknown",
+        inputTokens: 0,
+        cachedInputTokens: 0,
+        cacheCreation5mTokens: 0,
+        cacheCreation1hTokens: 0,
+        outputTokens: 0,
+        reasoningTokens: 0,
+        creditsUsed: 0,
+        apiEquivalentCostUsd: 0,
+        functionCalls: 0,
+        toolSearchCalls: 0,
+        readCalls: 0,
+        shellCalls: 0,
+        subagentCalls: 0,
+        repeatedReadCalls: 0,
+        repeatedShellCalls: 0,
+        planningMessages: 0,
+        editsObserved: 0,
+        wasteSignals: [],
+      };
+
+      existing.startedAt = minTimestamp(existing.startedAt, request.startedAt);
+      existing.endedAt = maxTimestamp(existing.endedAt, request.endedAt);
+      existing.functionCalls += request.functionCalls;
+      existing.toolSearchCalls += request.toolSearchCalls;
+      existing.readCalls += request.readCalls;
+      existing.shellCalls += request.shellCalls;
+      existing.repeatedReadCalls += Math.max(0, request.readCalls - 1);
+      existing.repeatedShellCalls += Math.max(0, request.shellCalls - 1);
+      existing.planningMessages +=
+        request.thinkingMessages + (request.functionCalls === 0 ? 1 : 0);
+
+      sessions.set(sessionKey, existing);
+    });
+
+  return [...sessions.values()].map((session) => {
+    session.wasteSignals = deriveWasteSignals(session);
+    return session;
+  });
+}
+
 function parseKiroRow(row: KiroSessionRow): ParsedSession | null {
   const history = row.payload.history ?? [];
   const readTargets = new Set<string>();
@@ -1033,7 +1247,11 @@ function buildReceipt({
     ),
   );
   const providerLabel = providerNames
-    .map((provider) => provider.toUpperCase())
+    .map((provider) =>
+      provider === "cursor"
+        ? "CURSOR EXPERIMENTAL"
+        : providerDisplayName(provider).toUpperCase(),
+    )
     .join(" + ");
   const orderLabel = buildReceiptOrderLabel({
     options,
@@ -1117,12 +1335,13 @@ function buildReceipt({
 
 function buildShareCopy(receipt: Receipt) {
   const topWaste = receipt.lines.find((line) => line.kind === "waste");
+  const providerLabel = formatProviderList(receipt.providerNames);
 
   return {
     x: [
       `I spent $${formatUsd(receipt.totalUsd)} of imaginary agent money this month.`,
       topWaste ? `Biggest line item: ${topWaste.label}.` : null,
-      "Generated from my local Codex, Claude Code, and Kiro CLI logs.",
+      `Generated from my local ${providerLabel} logs.`,
       "satirical estimate based on local agent logs",
     ]
       .filter((line): line is string => Boolean(line))
@@ -1132,7 +1351,7 @@ function buildShareCopy(receipt: Receipt) {
       topWaste
         ? `The biggest offender was ${topWaste.label.toLowerCase()}.`
         : null,
-      "Token Receipt turns local Codex, Claude Code, and Kiro CLI logs into a satirical receipt, a thermal-paper PNG, and share-ready copy.",
+      `Token Receipt turns local ${providerLabel} logs into a satirical receipt, a thermal-paper PNG, and share-ready copy.`,
       "satirical estimate based on local agent logs",
     ]
       .filter((line): line is string => Boolean(line))
@@ -1148,6 +1367,37 @@ function detectClaudeFiles() {
   return walkJsonl(join(homeDir(), ".claude", "projects")).filter(
     (file) => !file.includes("/subagents/"),
   );
+}
+
+function detectCursorTraceFiles() {
+  return walkFiles(getCursorLogsPath(), (file) =>
+    file.endsWith("cursor.requestTraces.log"),
+  );
+}
+
+function detectCursorWorkspaceEntries() {
+  return walkFiles(getCursorWorkspaceStoragePath(), (file) =>
+    file.endsWith("workspace.json"),
+  )
+    .map((file) => {
+      try {
+        const raw = JSON.parse(readFileSync(file, "utf8")) as {
+          folder?: string;
+        };
+        const projectPath = parseCursorWorkspacePath(raw.folder);
+
+        if (!projectPath) return null;
+
+        return {
+          storagePath: file.slice(0, -"/workspace.json".length),
+          dbPath: join(file.slice(0, -"/workspace.json".length), "state.vscdb"),
+          projectPath,
+        } satisfies CursorWorkspaceEntry;
+      } catch {
+        return null;
+      }
+    })
+    .filter((entry): entry is CursorWorkspaceEntry => entry !== null);
 }
 
 function detectKiroSessionRows() {
@@ -1183,6 +1433,10 @@ function detectKiroSessionRows() {
 }
 
 function walkJsonl(root: string) {
+  return walkFiles(root, (file) => file.endsWith(".jsonl"));
+}
+
+function walkFiles(root: string, match: (file: string) => boolean) {
   if (!existsSync(root)) return [];
   const matches: string[] = [];
 
@@ -1193,7 +1447,7 @@ function walkJsonl(root: string) {
         visit(fullPath);
         continue;
       }
-      if (entry.isFile() && fullPath.endsWith(".jsonl")) {
+      if (entry.isFile() && match(fullPath)) {
         matches.push(fullPath);
       }
     }
@@ -1303,6 +1557,32 @@ function formatCompactCount(value: number) {
   }).format(value);
 }
 
+function formatProviderList(providers: string[]) {
+  const labels = providers.map((provider) =>
+    provider === "cursor"
+      ? "experimental Cursor session"
+      : providerDisplayName(provider),
+  );
+
+  if (labels.length <= 1) {
+    return labels[0] ?? "agent";
+  }
+
+  if (labels.length === 2) {
+    return `${labels[0]} and ${labels[1]}`;
+  }
+
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
+}
+
+function providerDisplayName(provider: string) {
+  if (provider === "codex") return "Codex";
+  if (provider === "claude") return "Claude Code";
+  if (provider === "kiro") return "Kiro CLI";
+  if (provider === "cursor") return "Cursor";
+  return provider;
+}
+
 function anonymizePath(input: string) {
   return input.replace(homeDir(), "~");
 }
@@ -1315,6 +1595,18 @@ function anonymizeProject(input: string) {
 
 function homeDir() {
   return process.env.HOME ?? process.env.USERPROFILE ?? "";
+}
+
+function getCursorRootPath() {
+  return join(homeDir(), "Library", "Application Support", "Cursor");
+}
+
+function getCursorWorkspaceStoragePath() {
+  return join(getCursorRootPath(), "User", "workspaceStorage");
+}
+
+function getCursorLogsPath() {
+  return join(getCursorRootPath(), "logs");
 }
 
 function getKiroDbPath() {
@@ -1337,6 +1629,130 @@ function canUseSqlite3() {
   } catch {
     return false;
   }
+}
+
+function loadCursorWorkspace(entry: CursorWorkspaceEntry) {
+  const state = readCursorWorkspaceState(entry.dbPath);
+
+  return {
+    ...entry,
+    composerIds: parseCursorComposerIds(state["composer.composerData"]),
+    generations: parseCursorGenerations(state["aiService.generations"]),
+  } satisfies CursorWorkspace;
+}
+
+function readCursorWorkspaceState(dbPath: string) {
+  if (!existsSync(dbPath)) return {} as Record<string, string>;
+
+  const rows = runSqlite3Query(
+    dbPath,
+    "SELECT key, hex(value) FROM ItemTable WHERE key IN ('aiService.generations', 'composer.composerData') ORDER BY key",
+  );
+
+  return rows
+    .split("\n")
+    .filter(Boolean)
+    .reduce<Record<string, string>>((state, line) => {
+      const [key = "", hex = ""] = line.split("\t");
+
+      if (!key || !hex) {
+        return state;
+      }
+
+      state[key] = Buffer.from(hex, "hex").toString("utf8");
+      return state;
+    }, {});
+}
+
+function parseCursorWorkspacePath(folder: string | undefined) {
+  if (!folder) return null;
+
+  try {
+    return folder.startsWith("file://") ? fileURLToPath(folder) : folder;
+  } catch {
+    return null;
+  }
+}
+
+function parseCursorGenerations(input: string | undefined) {
+  if (!input) return [];
+
+  try {
+    const parsed = JSON.parse(input) as CursorGeneration[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseCursorComposerIds(input: string | undefined) {
+  if (!input) return [];
+
+  try {
+    const parsed = JSON.parse(input) as CursorComposerData;
+    return [
+      ...(parsed.selectedComposerIds ?? []),
+      ...(parsed.lastFocusedComposerIds ?? []),
+    ].filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function parseCursorTraceEvent(line: string) {
+  const groups = /^(?<timestamp>\S+)\s+(?<event>\S+)(?<rest>.*)$/.exec(
+    line,
+  )?.groups;
+  const timestamp = groups?.timestamp;
+  const event = groups?.event;
+  const rest = groups?.rest;
+
+  if (!timestamp || !event || !rest || !rest.includes('name="')) {
+    return null;
+  }
+
+  const fields = [...rest.matchAll(/(\w+)=("([^"]*)"|[^\s]+)/g)].reduce<
+    Record<string, string>
+  >((result, [, key = "", rawValue = "", quotedValue]) => {
+    if (!key) return result;
+    result[key] = quotedValue ?? rawValue.replace(/^"|"$/g, "");
+    return result;
+  }, {});
+
+  if (!fields.name) return null;
+
+  return {
+    timestamp,
+    event,
+    name: fields.name,
+    requestId: fields.requestId ?? null,
+    composerId: fields.composerId ?? null,
+  } satisfies CursorTraceEvent;
+}
+
+function inferCursorWorkspaceFromComposerId(
+  workspaces: CursorWorkspace[],
+  composerId: string | null,
+) {
+  if (!composerId) return null;
+
+  const matches = workspaces.filter((workspace) =>
+    workspace.composerIds.includes(composerId),
+  );
+
+  return matches.length === 1 ? matches[0] : null;
+}
+
+function minTimestamp(current: string | null, next: string | null) {
+  if (!next) return current;
+  if (!current) return next;
+  return current.localeCompare(next) <= 0 ? current : next;
+}
+
+function maxTimestamp(current: string | null, next: string | null) {
+  if (!next) return current;
+  if (!current) return next;
+  return current.localeCompare(next) >= 0 ? current : next;
 }
 
 function parseKiroPayload(hex: string) {
