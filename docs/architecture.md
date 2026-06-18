@@ -14,7 +14,7 @@ Token Receipt is a skill-first local tool. The skill layer handles agent-facing 
 
 1. An agent discovers or invokes the `token-receipt` skill.
 2. `scripts/generate.sh` ensures the standalone runtime is installed.
-3. The runtime analyzes local Codex, Claude Code, and Kiro CLI logs.
+3. The runtime analyzes local Codex, Claude Code, and Kiro CLI logs, plus experimental local Cursor session artifacts.
 4. The runtime writes `analysis.json`, `receipt.json`, `receipt.png`, and share copy into `./token-receipt-output`.
 5. The host agent reads those artifacts and writes the in-session summary or roast.
 
