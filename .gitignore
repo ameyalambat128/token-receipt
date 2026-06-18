@@ -40,3 +40,6 @@ yarn-error.log*
 *.pem
 
 .tmp
+
+# Local internal notes
+docs/internal/
