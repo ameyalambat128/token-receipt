@@ -77,6 +77,40 @@ Possible future surfaces:
 - project memory and progress views
 - analytics for individual developers and later teams
 
+## Future distribution and client shape
+
+If Token Receipt grows into a hosted platform, the cleanest client split is still:
+
+- skill as the in-agent UX inside Codex, Claude Code, and similar hosts
+- local runtime as the canonical engine for parsing logs and generating receipt artifacts
+- hosted platform as the aggregation and report layer across many runs
+- optional npm CLI as the account, upload, sync, and automation surface outside the agent
+
+That means the future system should not collapse into "the website does everything" or "the skill does everything."
+
+Instead, each layer should keep a narrow job:
+
+- the skill invokes local flows from inside the coding-agent session
+- the runtime produces canonical artifacts such as `analysis.json`, `receipt.json`, `receipt.png`, and share text
+- the hosted platform ingests structured artifacts and computes leaderboard, cohort, and trend views
+- a future npm package can handle commands such as `login`, `submit`, `sync`, `status`, or export helpers without becoming the primary analysis engine
+
+This repo is TypeScript and Bun-based, so if a packaged client is added later, npm is the more natural distribution surface than a Python or `uv`-style packaging model.
+
+The important architectural boundary is:
+
+- local artifact generation remains the source of truth
+- hosted analytics remain downstream of those artifacts
+- install and sync convenience layers should not redefine the core analysis contract
+
+In practice, the likely future flow is:
+
+1. A user installs the skill for in-agent use.
+2. The skill runs the local runtime and generates canonical receipt artifacts.
+3. The user optionally signs into a hosted account through a future npm CLI or web flow.
+4. The user opts in to submit one or more generated receipts to the hosted platform.
+5. The hosted platform computes cross-run analytics, profile views, and leaderboard surfaces from those submitted artifacts.
+
 ## Future community and leaderboard layer
 
 One additional future surface worth capturing is an opt-in public leaderboard around token and agent-usage stats.
