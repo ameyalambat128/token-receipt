@@ -41,6 +41,8 @@ Agent-facing links:
 
 Kiro CLI logs are also included automatically when you run the runtime with `--provider kiro` or `--provider all`. Kiro spend is based on local credit usage rather than token-derived API pricing.
 
+Experimental Cursor local sessions are included automatically when you run the runtime with `--provider cursor` or `--provider all`. Cursor currently contributes behavior-rich local activity analysis, but local spend and token accounting are lower fidelity than Codex or Claude Code.
+
 Force a fresh runtime install:
 
 ```bash

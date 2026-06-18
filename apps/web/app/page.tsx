@@ -15,7 +15,7 @@ import {
 
 const siteUrl = "https://tokenreceipt.ameyalambat.com";
 const productDescription =
-  "Token Receipt turns your Codex, Claude Code, and Kiro CLI logs into your coding-agent bill with a thermal-paper receipt, share-ready post copy, and skill-native workflows.";
+  "Token Receipt turns your Codex, Claude Code, Kiro CLI, and experimental Cursor local session logs into your coding-agent bill with a thermal-paper receipt, share-ready post copy, and skill-native workflows.";
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -45,6 +45,7 @@ const structuredData = {
         "Codex",
         "Claude Code",
         "Kiro CLI",
+        "Cursor",
         "agent skills",
         "AI bill",
         "satire",
@@ -65,7 +66,7 @@ const faqItems = [
     value: "providers",
     question: "Which agents does Token Receipt support first?",
     answer:
-      "V1 supports Codex, Claude Code, and Kiro CLI. It reads the local session logs those tools already write, normalizes usage and tool activity, and produces a receipt plus share copy.",
+      "V1 supports Codex, Claude Code, Kiro CLI, and experimental local Cursor sessions. Cursor support is behavior-first today, so the receipt can reflect local tool activity even when spend fidelity is lower than Codex or Claude Code.",
   },
   {
     value: "privacy",
@@ -77,7 +78,7 @@ const faqItems = [
     value: "accuracy",
     question: "Is the receipt supposed to be financially accurate?",
     answer:
-      "It is grounded in real local usage and tool signals, but it is still an interpretation of local agent activity rather than a billing ledger. Kiro cost is based on local credit usage rather than token-derived API pricing.",
+      "It is grounded in real local usage and tool signals, but it is still an interpretation of local agent activity rather than a billing ledger. Kiro cost is based on local credit usage rather than token-derived API pricing, and experimental Cursor support currently emphasizes behavioral signals over invoice-grade spend accounting.",
   },
   {
     value: "share-loop",
@@ -98,7 +99,7 @@ export default function Home() {
   const codexPrompt =
     "$token-receipt Generate a receipt for my last 30 days of agent usage.";
   const claudePrompt =
-    "Use token-receipt to itemize my last 30 days of Codex, Claude Code, and Kiro CLI usage.";
+    "Use token-receipt to itemize my last 30 days of Codex, Claude Code, Kiro CLI, and Cursor usage.";
   const doctorCommand = "bun run -F token-receipt doctor";
   const runtimeCommand =
     "bun run -F token-receipt generate -- --provider all --since 30d --out ./token-receipt-output";
@@ -129,7 +130,8 @@ export default function Home() {
           <p className="mt-4 text-lg text-gray-100">
             Your Agent Has Expenses.
             <br className="hidden sm:block" />
-            Officially itemized for Codex, Claude Code, and Kiro CLI.
+            Officially itemized for Codex, Claude Code, Kiro CLI, and
+            experimental Cursor local sessions.
           </p>
 
           <p className="mt-6 leading-relaxed text-gray-400">
@@ -209,8 +211,9 @@ export default function Home() {
             </p>
             <p className="mb-4 leading-relaxed text-gray-400">
               It reads the session logs that Codex, Claude Code, and Kiro CLI
-              already write locally, turns those into structured usage facts,
-              and lays them out as an itemized bill.
+              already write locally, plus experimental local Cursor workspace
+              metadata and request traces, turns those into structured usage
+              facts, and lays them out as an itemized bill.
             </p>
             <p className="mb-6 leading-relaxed text-gray-400">
               The result feels personal because it reflects your own habits:
@@ -218,9 +221,16 @@ export default function Home() {
               other expensive little ritual.
             </p>
             <ul className="list-inside list-disc space-y-1 text-gray-400">
-              <li>Reads local logs from Codex, Claude Code, and Kiro CLI</li>
+              <li>
+                Reads local logs from Codex, Claude Code, Kiro CLI, and
+                experimental Cursor local sessions
+              </li>
               <li>
                 Kiro spend uses local credit usage instead of token pricing
+              </li>
+              <li>
+                Cursor receipts currently prioritize tool activity over exact
+                spend accounting
               </li>
               <li>Builds a thermal-paper PNG plus ready-to-edit post copy</li>
               <li>Uses skills so the host agent can write the final roast</li>
@@ -243,6 +253,25 @@ export default function Home() {
               Because Kiro does not expose the same local token counters here,
               the Kiro portion of the bill uses local credit usage instead of a
               token-derived API estimate.
+            </p>
+          </section>
+
+          <Divider />
+
+          <section>
+            <h2 className="gradient-text mb-4 text-xl font-bold">
+              Experimental Cursor local support
+            </h2>
+            <p className="mb-4 leading-relaxed text-gray-400">
+              Cursor is supported experimentally from local workspace metadata
+              and request trace logs. That gives Token Receipt enough signal to
+              group Composer activity, count reads and searches, and fold those
+              habits into the same receipt flow.
+            </p>
+            <p className="leading-relaxed text-gray-400">
+              The tradeoff is accounting fidelity. Cursor does not currently
+              expose the same local token and cost counters here, so the receipt
+              treats Cursor as behavior-rich but spend-light.
             </p>
           </section>
 
@@ -311,7 +340,7 @@ export default function Home() {
                 <span className="font-mono text-gray-600">1.</span>
                 <p className="text-gray-400">
                   The runtime scans local Codex, Claude Code, and Kiro CLI
-                  session logs
+                  session logs, plus experimental Cursor local artifacts
                 </p>
               </div>
               <div className="flex gap-4">
@@ -341,7 +370,8 @@ export default function Home() {
             </h2>
             <ul className="list-inside list-disc space-y-1 text-gray-400">
               <li>
-                People shipping with Codex, Claude Code, or Kiro CLI every day
+                People shipping with Codex, Claude Code, Kiro CLI, or Cursor
+                every day
               </li>
               <li>
                 People who want Kiro CLI credits and tool detours in the same
