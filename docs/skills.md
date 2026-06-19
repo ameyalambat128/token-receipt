@@ -90,3 +90,5 @@ Every run writes to `token-receipt-output/` in the current working directory:
 - `share/linkedin.txt`
 
 `receipt.json` also contains the display metadata used by the PNG renderer so the generated receipt can stay visually aligned with the landing-page example.
+
+The full renderer produces the PNG from a self-contained HTML receipt and a local Chromium-compatible browser. This keeps the output local while matching the marketing-site receipt treatment more closely than the older lightweight renderer path. A future `lite` option should remain available for users who prefer a faster renderer with no browser dependency.
