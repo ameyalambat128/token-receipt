@@ -12,8 +12,9 @@
     "check-types": "tsc --noEmit"
   },
   "dependencies": {
-    "@resvg/resvg-js": "^2.6.2",
-    "@token-receipt/core": "*"
+    "@puppeteer/browsers": "^3.0.4",
+    "@token-receipt/core": "*",
+    "puppeteer-core": "^25.1.0"
   },
   "devDependencies": {
     "@repo/typescript-config": "*",

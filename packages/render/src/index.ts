@@ -1,294 +1,566 @@
-import { Resvg } from "@resvg/resvg-js";
+import { existsSync, readdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+import {
+  Browser,
+  BrowserPlatform,
+  BrowserTag,
+  detectBrowserPlatform,
+  install,
+  resolveBuildId,
+} from "@puppeteer/browsers";
+import puppeteer from "puppeteer-core";
 import type { Receipt, ReceiptLineItem } from "@token-receipt/core";
-
-const monoStack =
-  "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Monaco, Consolas, 'Liberation Mono', monospace";
+import { paperTextureDataUrl } from "./paper-texture.generated.js";
 
 const activityCellOpacity = ["0.14", "0.34", "0.52", "0.74", "0.96"];
 
-export function renderReceiptSvg(receipt: Receipt) {
-  const paper = { x: 84, y: 42, width: 792, paddingX: 54, paddingY: 74 };
+export function renderReceiptHtml(receipt: Receipt) {
   const rows = buildReceiptRows(receipt.lines);
-  const rowSectionHeight = rows.reduce((sum, row) => sum + row.height, 0);
-  const statRows = receipt.display.stats;
-  const detailRows = receipt.display.details;
-  const activityGrid = receipt.display.activity.columns;
-  const periodLabel = receipt.display.activity.periodLabel;
-  const startMonth = receipt.display.activity.startLabel;
-  const endMonth = receipt.display.activity.endLabel;
-  const statsStartY = 384 + rowSectionHeight;
-  const statsEndY = statsStartY + 166;
-  const detailStartY = statsEndY + 46;
-  const thankYouY = detailStartY + 166;
-  const graphStartY = thankYouY + 112;
-  const noteY = graphStartY + 210;
-  const footerY = noteY + 66;
-  const paperHeight = footerY + 92;
-  const canvasHeight = paper.y + paperHeight + 58;
-  const paperCenterX = paper.x + paper.width / 2;
-  const paperCenterY = paper.y + paperHeight / 2;
-  const qtyX = paper.x + paper.paddingX;
-  const itemX = qtyX + 44;
-  const amountX = paper.x + paper.width - paper.paddingX;
-  const scallops = buildScallops(paper.x, paper.y, paper.width, paperHeight);
-  const lineItems = renderLineItems(rows, itemX, amountX, 402);
-  const statMarkup = statRows
-    .map(
-      (row, index) => `
-        <text x="${qtyX}" y="${statsStartY + 36 + index * 28}" font-size="20" fill="#312a23">${escapeXml(row.label)}:</text>
-        <text x="${amountX}" y="${statsStartY + 36 + index * 28}" font-size="20" fill="#181411" text-anchor="end">${escapeXml(row.value)}</text>
-      `,
-    )
-    .join("");
-  const detailMarkup = detailRows
-    .map(
-      (row, index) => `
-        <text x="${qtyX}" y="${detailStartY + index * 28}" font-size="19" fill="#342d25">${escapeXml(row.label)}:</text>
-        <text x="${amountX}" y="${detailStartY + index * 28}" font-size="19" fill="#181411" text-anchor="end">${escapeXml(row.value)}</text>
-      `,
-    )
-    .join("");
-  const graphMarkup = renderActivityGraph(
-    activityGrid,
-    paperCenterX,
-    graphStartY,
-  );
+  const stats = [
+    ...receipt.display.stats,
+    { label: "TOTAL", value: formatMoney(receipt.totalUsd) },
+  ];
+  const details = buildDetailRows(receipt);
 
-  return `
-    <svg width="960" height="${canvasHeight}" viewBox="0 0 960 ${canvasHeight}" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="paperBase" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#fffaf2"/>
-          <stop offset="52%" stop-color="#f4efe6"/>
-          <stop offset="100%" stop-color="#ede4d7"/>
-        </linearGradient>
-        <linearGradient id="paperSheen" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.82"/>
-          <stop offset="30%" stop-color="#ffffff" stop-opacity="0.06"/>
-          <stop offset="72%" stop-color="#715f4a" stop-opacity="0.08"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.2"/>
-        </linearGradient>
-        <linearGradient id="paperTint" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.16"/>
-          <stop offset="18%" stop-color="#ffffff" stop-opacity="0"/>
-          <stop offset="84%" stop-color="#786a59" stop-opacity="0.07"/>
-          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.1"/>
-        </linearGradient>
-        <filter id="paperShadow" x="-20%" y="-10%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="30" stdDeviation="28" flood-color="#000000" flood-opacity="0.28"/>
-        </filter>
-        <filter id="paperNoise" x="-20%" y="-20%" width="140%" height="140%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" seed="7" result="noise"/>
-          <feColorMatrix
-            in="noise"
-            type="matrix"
-            values="1 0 0 0 0
-                    0 1 0 0 0
-                    0 0 1 0 0
-                    0 0 0 0.18 0"
-          />
-        </filter>
-        <filter id="paperWrinkle" x="-10%" y="-10%" width="120%" height="120%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.014 0.06" numOctaves="2" seed="11" result="warp"/>
-          <feDisplacementMap in="SourceGraphic" in2="warp" scale="8" xChannelSelector="R" yChannelSelector="G"/>
-        </filter>
-        <mask id="paperMask">
-          <rect x="${paper.x}" y="${paper.y}" width="${paper.width}" height="${paperHeight}" rx="34" fill="white"/>
-          ${scallops}
-        </mask>
-      </defs>
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
 
-      <rect width="960" height="${canvasHeight}" fill="transparent"/>
+      html,
+      body {
+        margin: 0;
+        min-width: 760px;
+        background: transparent;
+        color: #1f1b17;
+      }
 
-      <g filter="url(#paperShadow)" transform="rotate(-1.2 ${paperCenterX} ${paperCenterY})">
-        <g mask="url(#paperMask)">
-          <rect x="${paper.x}" y="${paper.y}" width="${paper.width}" height="${paperHeight}" rx="34" fill="url(#paperBase)"/>
-          <rect x="${paper.x}" y="${paper.y}" width="${paper.width}" height="${paperHeight}" rx="34" fill="url(#paperTint)"/>
-          <rect x="${paper.x}" y="${paper.y}" width="${paper.width}" height="${paperHeight}" rx="34" fill="url(#paperSheen)" opacity="0.74"/>
-          <rect x="${paper.x}" y="${paper.y}" width="${paper.width}" height="${paperHeight}" rx="34" filter="url(#paperNoise)" opacity="0.65"/>
-          <g filter="url(#paperWrinkle)" opacity="0.42">
-            <rect x="${paper.x}" y="${paper.y}" width="${paper.width}" height="${paperHeight}" rx="34" fill="transparent" stroke="#8b7257" stroke-opacity="0.12" stroke-width="2"/>
-            <path d="M${paper.x + 46} ${paper.y + 96} C${paper.x + 182} ${paper.y + 72}, ${paper.x + 320} ${paper.y + 154}, ${paper.x + 472} ${paper.y + 124} S${paper.x + 738} ${paper.y + 86}, ${paper.x + 748} ${paper.y + 158}" stroke="#8c775e" stroke-opacity="0.13" stroke-width="3" fill="none"/>
-            <path d="M${paper.x + 118} ${paper.y + 282} C${paper.x + 238} ${paper.y + 236}, ${paper.x + 396} ${paper.y + 334}, ${paper.x + 520} ${paper.y + 288} S${paper.x + 716} ${paper.y + 260}, ${paper.x + 728} ${paper.y + 320}" stroke="#9a8570" stroke-opacity="0.1" stroke-width="2.6" fill="none"/>
-            <path d="M${paper.x + 164} ${paper.y + 604} C${paper.x + 266} ${paper.y + 554}, ${paper.x + 478} ${paper.y + 662}, ${paper.x + 654} ${paper.y + 606}" stroke="#7f6a54" stroke-opacity="0.1" stroke-width="2.4" fill="none"/>
-          </g>
-          <circle cx="${paper.x + 140}" cy="${paper.y + 138}" r="118" fill="#ffffff" fill-opacity="0.16"/>
-          <circle cx="${paper.x + paper.width - 138}" cy="${paper.y + 244}" r="128" fill="#d9cdbd" fill-opacity="0.18"/>
-        </g>
+      body {
+        font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: geometricPrecision;
+      }
 
-        <rect x="${paper.x}" y="${paper.y}" width="${paper.width}" height="${paperHeight}" rx="34" fill="none" stroke="#d0c2ad" stroke-width="1.4" stroke-opacity="0.85"/>
+      .receipt-stage {
+        position: relative;
+        width: 760px;
+        padding: 44px 104px 70px;
+        background: transparent;
+      }
 
-        <text x="${paperCenterX}" y="${paper.y + 110}" text-anchor="middle" font-family="${monoStack}" font-size="56" font-weight="600" letter-spacing="-3.2" fill="#1f1b17">TOKEN RECEIPT</text>
-        <text x="${paperCenterX}" y="${paper.y + 144}" text-anchor="middle" font-family="${monoStack}" font-size="20" letter-spacing="4.6" fill="#7a6754">${escapeXml(periodLabel)}</text>
+      .receipt-glow {
+        position: absolute;
+        left: 140px;
+        right: 140px;
+        top: 64px;
+        height: 96px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+        filter: blur(48px);
+        pointer-events: none;
+      }
 
-        <text x="${qtyX}" y="${paper.y + 204}" font-family="${monoStack}" font-size="20" fill="#2b241d">${escapeXml(receipt.display.orderLabel)}</text>
-        <text x="${qtyX}" y="${paper.y + 234}" font-family="${monoStack}" font-size="20" fill="#2b241d">${escapeXml(receipt.display.generatedDate)}</text>
-        <text x="${qtyX}" y="${paper.y + 264}" font-family="${monoStack}" font-size="20" fill="#7c6957">PROVIDERS: ${escapeXml(receipt.display.providerLabel)}</text>
+      .receipt-shadow {
+        position: absolute;
+        left: 132px;
+        right: 132px;
+        bottom: 42px;
+        height: 64px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.35);
+        filter: blur(32px);
+        pointer-events: none;
+      }
 
-        <line x1="${qtyX}" x2="${amountX}" y1="${paper.y + 296}" y2="${paper.y + 296}" stroke="#6d5d4e" stroke-opacity="0.72" stroke-width="1.4" stroke-dasharray="8 8"/>
-        <text x="${qtyX}" y="${paper.y + 322}" font-family="${monoStack}" font-size="18" fill="#473c32">QTY</text>
-        <text x="${itemX}" y="${paper.y + 322}" font-family="${monoStack}" font-size="18" fill="#473c32">ITEM</text>
-        <text x="${amountX}" y="${paper.y + 322}" text-anchor="end" font-family="${monoStack}" font-size="18" fill="#473c32">AMT</text>
-        ${lineItems}
+      .receipt-paper {
+        position: relative;
+        overflow: hidden;
+        width: 552px;
+        border: 1px solid rgba(214, 204, 188, 0.72);
+        border-radius: 32px;
+        padding: 28px 24px 32px;
+        background-color: #f5f1e8;
+        background-image:
+          linear-gradient(180deg, rgba(255, 252, 247, 0.44), rgba(245, 239, 231, 0.2)),
+          linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 18%, rgba(120, 106, 89, 0.1) 84%, rgba(255, 255, 255, 0.04)),
+          url("${paperTextureDataUrl}");
+        background-blend-mode: screen, multiply, normal;
+        background-position: center, center, center;
+        background-size: cover, cover, cover;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.28);
+      }
 
-        <line x1="${qtyX}" x2="${amountX}" y1="${statsStartY}" y2="${statsStartY}" stroke="#6d5d4e" stroke-opacity="0.72" stroke-width="1.4" stroke-dasharray="8 8"/>
-        ${statMarkup}
-        <text x="${qtyX}" y="${statsEndY - 24}" font-family="${monoStack}" font-size="22" fill="#251f19">TOTAL:</text>
-        <text x="${amountX}" y="${statsEndY - 24}" text-anchor="end" font-family="${monoStack}" font-size="22" fill="#251f19">${escapeXml(formatMoney(receipt.totalUsd))}</text>
-        <line x1="${qtyX}" x2="${amountX}" y1="${statsEndY}" y2="${statsEndY}" stroke="#6d5d4e" stroke-opacity="0.72" stroke-width="1.4" stroke-dasharray="8 8"/>
+      .paper-light {
+        position: absolute;
+        inset: 0;
+        opacity: 0.26;
+        mix-blend-mode: soft-light;
+        pointer-events: none;
+      }
 
-        ${detailMarkup}
+      .paper-light::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent 32%, rgba(113, 95, 74, 0.12) 66%, rgba(255, 255, 255, 0.12));
+      }
 
-        <text x="${paperCenterX}" y="${thankYouY}" text-anchor="middle" font-family="${monoStack}" font-size="24" letter-spacing="1.4" fill="#201914">${escapeXml(receipt.footer.toUpperCase())}</text>
+      .paper-light::after {
+        content: "";
+        position: absolute;
+        right: 10%;
+        top: 30%;
+        width: 176px;
+        height: 176px;
+        border-radius: 999px;
+        background: rgba(214, 211, 209, 0.16);
+        filter: blur(48px);
+      }
 
-        ${graphMarkup}
-        <text x="${paperCenterX - 128}" y="${graphStartY + 18}" font-family="${monoStack}" font-size="13" letter-spacing="2.4" fill="#6e5d4d">${escapeXml(receipt.display.activity.title.toUpperCase())}</text>
-        <text x="${paperCenterX + 128}" y="${graphStartY + 18}" text-anchor="end" font-family="${monoStack}" font-size="13" letter-spacing="2.4" fill="#6e5d4d">${escapeXml(periodLabel)}</text>
-        <text x="${paperCenterX - 114}" y="${graphStartY + 146}" font-family="${monoStack}" font-size="14" letter-spacing="2.2" fill="#8a7866">${escapeXml(startMonth)}</text>
-        <text x="${paperCenterX + 114}" y="${graphStartY + 146}" text-anchor="end" font-family="${monoStack}" font-size="14" letter-spacing="2.2" fill="#8a7866">${escapeXml(endMonth)}</text>
+      .paper-highlight {
+        position: absolute;
+        left: 12%;
+        top: 18%;
+        width: 160px;
+        height: 160px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.16);
+        filter: blur(48px);
+      }
 
-        <text x="${paperCenterX}" y="${noteY}" text-anchor="middle" font-family="${monoStack}" font-size="15" letter-spacing="3" fill="#7d6a58">${escapeXml(receipt.display.note.toUpperCase())}</text>
-        <text x="${paperCenterX}" y="${noteY + 28}" text-anchor="middle" font-family="${monoStack}" font-size="15" fill="#85715f">${escapeXml(receipt.disclaimer)}</text>
+      .receipt-content {
+        position: relative;
+        z-index: 1;
+      }
 
-        <line x1="${qtyX}" x2="${amountX}" y1="${footerY}" y2="${footerY}" stroke="#6d5d4e" stroke-opacity="0.72" stroke-width="1.4" stroke-dasharray="8 8"/>
-        <text x="${paperCenterX}" y="${footerY + 38}" text-anchor="middle" font-family="${monoStack}" font-size="15" fill="#7b6755">${escapeXml(receipt.display.footerLink)}</text>
-      </g>
-    </svg>
-  `.trim();
+      .heading {
+        text-align: center;
+      }
+
+      .title {
+        margin: 0;
+        color: #1f1b17;
+        font-size: 40px;
+        font-weight: 600;
+        letter-spacing: -0.06em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+
+      .subtitle {
+        margin: 12px 0 0;
+        color: #57534e;
+        font-size: 15px;
+        letter-spacing: 0.24em;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .meta {
+        margin-top: 32px;
+        color: #1f1b17;
+        font-size: 15px;
+        line-height: 24px;
+      }
+
+      .divider-block {
+        margin-top: 20px;
+        border-bottom: 1px dashed rgba(120, 113, 108, 0.7);
+        border-top: 1px dashed rgba(120, 113, 108, 0.7);
+        padding: 8px 0;
+        color: #292524;
+        font-size: 14px;
+        line-height: 22px;
+      }
+
+      .receipt-grid {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) 82px;
+        gap: 12px;
+      }
+
+      .amount {
+        text-align: right;
+      }
+
+      .line-items {
+        margin-top: 8px;
+        color: #1f1b17;
+        font-size: 15px;
+        line-height: 24px;
+      }
+
+      .line-item {
+        display: grid;
+        grid-template-columns: 42px minmax(0, 1fr) 82px;
+        gap: 12px;
+        padding: 5px 0;
+      }
+
+      .line-label {
+        padding-right: 8px;
+      }
+
+      .line-item.waste .amount {
+        color: #7d433e;
+      }
+
+      .stats {
+        margin-top: 20px;
+        border-bottom: 1px dashed rgba(120, 113, 108, 0.7);
+        border-top: 1px dashed rgba(120, 113, 108, 0.7);
+        padding: 12px 0;
+        color: #1f1b17;
+        font-size: 15px;
+        line-height: 24px;
+      }
+
+      .stat-row,
+      .detail-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .stat-row.total {
+        margin-top: 8px;
+        font-size: 17px;
+      }
+
+      .details {
+        margin-top: 16px;
+        color: #1f1b17;
+        font-size: 15px;
+        line-height: 24px;
+      }
+
+      .thank-you {
+        margin-top: 32px;
+        color: #1f1b17;
+        font-size: 16px;
+        letter-spacing: 0.06em;
+        line-height: 1.35;
+        text-align: center;
+        text-transform: uppercase;
+      }
+
+      .activity {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 264px;
+        margin: 28px auto 0;
+        padding: 0 4px;
+      }
+
+      .activity-heading,
+      .activity-footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        color: #44403c;
+        font-size: 12px;
+        letter-spacing: 0.2em;
+        line-height: 1.25;
+        text-transform: uppercase;
+      }
+
+      .activity-grid {
+        display: flex;
+        align-items: end;
+        gap: 4px;
+        margin-top: 12px;
+      }
+
+      .activity-column {
+        display: grid;
+        gap: 4px;
+      }
+
+      .activity-cell {
+        display: block;
+        width: 10px;
+        height: 10px;
+        border-radius: 2px;
+        background: #000;
+      }
+
+      .activity-footer {
+        margin-top: 12px;
+        color: #78716c;
+        font-size: 11px;
+        letter-spacing: 0.18em;
+      }
+
+      .note {
+        margin-top: 16px;
+        color: #78716c;
+        font-size: 13px;
+        line-height: 20px;
+        text-align: center;
+      }
+
+      .note p {
+        margin: 0;
+      }
+
+      .note .loud {
+        letter-spacing: 0.22em;
+        text-transform: uppercase;
+      }
+
+      .note .disclaimer {
+        margin-top: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="receipt-stage" aria-label="Token Receipt">
+      <div class="receipt-glow"></div>
+      <div class="receipt-shadow"></div>
+      <article class="receipt-paper">
+        <div class="paper-light"><div class="paper-highlight"></div></div>
+
+        <div class="receipt-content">
+          <header class="heading">
+            <p class="title">TOKEN RECEIPT</p>
+            <p class="subtitle">${escapeHtml(receipt.display.activity.periodLabel)}</p>
+          </header>
+
+          <section class="meta">
+            <div>${escapeHtml(receipt.display.orderLabel)}</div>
+            <div>${escapeHtml(receipt.display.generatedDate)}</div>
+          </section>
+
+          <section class="divider-block">
+            <div class="receipt-grid">
+              <span>QTY</span>
+              <span>ITEM</span>
+              <span class="amount">AMT</span>
+            </div>
+          </section>
+
+          <section class="line-items">
+            ${rows
+              .map(
+                (row) => `<div class="line-item ${row.kind}">
+                  <span>${row.qty}</span>
+                  <span class="line-label">${escapeHtml(row.label)}</span>
+                  <span class="amount">${escapeHtml(row.amount)}</span>
+                </div>`,
+              )
+              .join("")}
+          </section>
+
+          <section class="stats">
+            ${stats
+              .map(
+                (
+                  row,
+                ) => `<div class="stat-row ${row.label === "TOTAL" ? "total" : ""}">
+                  <span>${escapeHtml(row.label)}:</span>
+                  <span>${escapeHtml(row.value)}</span>
+                </div>`,
+              )
+              .join("")}
+          </section>
+
+          <section class="details">
+            ${details
+              .map(
+                (row) => `<div class="detail-row">
+                  <span>${escapeHtml(row.label)}:</span>
+                  <span>${escapeHtml(row.value)}</span>
+                </div>`,
+              )
+              .join("")}
+          </section>
+
+          <section class="thank-you">${escapeHtml(receipt.footer)}</section>
+
+          <section class="activity" aria-label="${escapeHtml(receipt.display.activity.title)}">
+            <div class="activity-heading">
+              <span>${escapeHtml(receipt.display.activity.title)}</span>
+              <span>${escapeHtml(receipt.display.activity.periodLabel)}</span>
+            </div>
+            <div class="activity-grid" aria-hidden="true">
+              ${receipt.display.activity.columns
+                .map(
+                  (
+                    column,
+                    columnIndex,
+                  ) => `<div class="activity-column" data-column="${columnIndex}">
+                    ${column
+                      .map(
+                        (value, rowIndex) =>
+                          `<span class="activity-cell" data-row="${rowIndex}" style="opacity: ${activityCellOpacity[value] ?? activityCellOpacity[0]}"></span>`,
+                      )
+                      .join("")}
+                  </div>`,
+                )
+                .join("")}
+            </div>
+            <div class="activity-footer">
+              <span>${escapeHtml(receipt.display.activity.startLabel)}</span>
+              <span>${escapeHtml(receipt.display.activity.endLabel)}</span>
+            </div>
+          </section>
+
+          <section class="note">
+            <p class="loud">${escapeHtml(receipt.display.note)}</p>
+            <p class="disclaimer">${escapeHtml(receipt.disclaimer)}</p>
+          </section>
+        </div>
+      </article>
+    </main>
+  </body>
+</html>`;
 }
 
-export function renderReceiptPng(receipt: Receipt) {
-  const svg = renderReceiptSvg(receipt);
-  const renderer = new Resvg(svg, {
-    fitTo: {
-      mode: "width",
-      value: 1200,
-    },
+export async function renderReceiptPng(receipt: Receipt) {
+  const browser = await puppeteer.launch({
+    executablePath: await findChromiumExecutable(),
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   });
 
-  return renderer.render().asPng();
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({
+      width: 760,
+      height: 1400,
+      deviceScaleFactor: 2,
+    });
+    await page.setContent(renderReceiptHtml(receipt), {
+      waitUntil: "load",
+    });
+
+    const stage = await page.$(".receipt-stage");
+
+    if (!stage) {
+      throw new Error("Receipt HTML did not render the screenshot target.");
+    }
+
+    const box = await stage.boundingBox();
+    const height = Math.ceil(box?.height ?? 1400);
+    await page.setViewport({
+      width: 760,
+      height,
+      deviceScaleFactor: 2,
+    });
+
+    return await stage.screenshot({
+      omitBackground: true,
+      type: "png",
+    });
+  } finally {
+    await browser.close();
+  }
 }
 
 const buildReceiptRows = (lines: ReceiptLineItem[]) =>
-  lines.map((line, index) => {
-    const labelLines = wrapText(line.label, 26, 2);
-    const height = 28 + labelLines.length * 23;
+  lines.map((line, index) => ({
+    qty: String(index + 1).padStart(2, "0"),
+    label: line.label,
+    amount: formatMoney(line.amountUsd),
+    kind: line.kind === "waste" ? "waste" : "summary",
+  }));
 
-    return {
-      qty: String(index + 1).padStart(2, "0"),
-      amount: formatMoney(line.amountUsd),
-      amountColor: line.kind === "waste" ? "#7d433e" : "#181411",
-      labelLines,
-      height,
-    };
-  });
-
-const renderLineItems = (
-  rows: ReturnType<typeof buildReceiptRows>,
-  itemX: number,
-  amountX: number,
-  startY: number,
-) => {
-  let cursorY = startY;
-
-  return rows
-    .map((row) => {
-      const topY = cursorY;
-      cursorY += row.height;
-
-      return `
-        <text x="${itemX - 44}" y="${topY}" font-family="${monoStack}" font-size="20" fill="#2d261f">${row.qty}</text>
-        <text x="${itemX}" y="${topY}" font-family="${monoStack}" font-size="20" fill="#1d1814">
-          ${row.labelLines
-            .map(
-              (label, index) =>
-                `<tspan x="${itemX}" dy="${index === 0 ? 0 : 22}">${escapeXml(label)}</tspan>`,
-            )
-            .join("")}
-        </text>
-        <text x="${amountX}" y="${topY}" text-anchor="end" font-family="${monoStack}" font-size="20" fill="${row.amountColor}">${escapeXml(row.amount)}</text>
-      `;
-    })
-    .join("");
-};
-
-const renderActivityGraph = (
-  grid: number[][],
-  centerX: number,
-  startY: number,
-) => {
-  const cellSize = 11;
-  const gap = 4;
-  const gridWidth = grid.length * cellSize + (grid.length - 1) * gap;
-  const baseX = centerX - gridWidth / 2;
-  const baseY = startY + 36;
-
-  return grid
-    .map((column, columnIndex) =>
-      column
-        .map((value, rowIndex) => {
-          const x = baseX + columnIndex * (cellSize + gap);
-          const y = baseY + rowIndex * (cellSize + gap);
-
-          return `<rect x="${x}" y="${y}" width="${cellSize}" height="${cellSize}" rx="2.4" fill="#16110d" fill-opacity="${activityCellOpacity[value]}"/>`;
-        })
-        .join(""),
-    )
-    .join("");
-};
-
-const buildScallops = (x: number, y: number, width: number, height: number) => {
-  const radius = 8;
-  const step = 22;
-  const count = Math.ceil(width / step) + 2;
-
-  return Array.from({ length: count }, (_, index) => {
-    const cx = x + 10 + index * step;
-
-    return `
-      <circle cx="${cx}" cy="${y}" r="${radius}" fill="black"/>
-      <circle cx="${cx}" cy="${y + height}" r="${radius}" fill="black"/>
-    `;
-  }).join("");
-};
-
-const wrapText = (text: string, maxChars: number, maxLines: number) => {
-  const words = text.split(/\s+/);
-  const lines = words.reduce<string[]>(
-    (acc, word) => {
-      const currentLine = acc[acc.length - 1] ?? "";
-      const nextLine = currentLine ? `${currentLine} ${word}` : word;
-
-      if (!currentLine || nextLine.length <= maxChars) {
-        return [...acc.slice(0, -1), nextLine];
-      }
-
-      return [...acc, word];
-    },
-    [""],
+const buildDetailRows = (receipt: Receipt) =>
+  receipt.display.details.filter(
+    (row) => row.label !== "AVOIDABLE WASTE" && row.label !== "USEFUL WORK",
   );
-  const trimmed = lines.filter(Boolean).slice(0, maxLines);
 
-  if (lines.length > maxLines) {
-    const last = trimmed[trimmed.length - 1] ?? "";
-    trimmed[trimmed.length - 1] =
-      last.length > maxChars - 1
-        ? `${last.slice(0, maxChars - 1).trimEnd()}…`
-        : `${last}…`;
+const findChromiumExecutable = async () => {
+  const candidates = [
+    process.env.TOKEN_RECEIPT_CHROME_PATH,
+    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
+    "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    ...findPlaywrightChromiumExecutables(),
+  ].filter((path): path is string => Boolean(path));
+
+  const executable = candidates.find((path) => existsSync(path));
+
+  if (!executable) {
+    return await installChromiumExecutable();
   }
 
-  return trimmed;
+  return executable;
+};
+
+const installChromiumExecutable = async () => {
+  const platform = detectBrowserPlatform();
+
+  if (!platform || platform === BrowserPlatform.LINUX_ARM) {
+    throw new Error(
+      [
+        "No supported Chrome Headless Shell download is available for this platform.",
+        "Install Chrome or set TOKEN_RECEIPT_CHROME_PATH to a Chromium-compatible browser binary.",
+      ].join(" "),
+    );
+  }
+
+  const buildId = await resolveBuildId(
+    Browser.CHROMEHEADLESSSHELL,
+    platform,
+    BrowserTag.STABLE,
+  );
+  const browser = await install({
+    browser: Browser.CHROMEHEADLESSSHELL,
+    buildId,
+    cacheDir: join(homedir(), "Library", "Caches", "token-receipt", "chromium"),
+    platform,
+    unpack: true,
+  });
+
+  return browser.executablePath;
+};
+
+const findPlaywrightChromiumExecutables = () => {
+  const cacheDir = join(homedir(), "Library", "Caches", "ms-playwright");
+
+  if (!existsSync(cacheDir)) {
+    return [];
+  }
+
+  return readdirSync(cacheDir, { withFileTypes: true })
+    .filter(
+      (entry) =>
+        entry.isDirectory() &&
+        entry.name.startsWith("chromium_headless_shell-"),
+    )
+    .map((entry) =>
+      join(
+        cacheDir,
+        entry.name,
+        "chrome-headless-shell-mac-arm64",
+        "chrome-headless-shell",
+      ),
+    )
+    .sort()
+    .reverse();
 };
 
 const formatMoney = (value: number) =>
   `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
   })}`;
 
-function escapeXml(value: string) {
+function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
