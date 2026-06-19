@@ -118,7 +118,11 @@ That means the receipt boundary is:
 - analytical fields such as totals, waste lines, and disclaimer text
 - display fields such as the order header, stats rows, detail rows, activity grid, and footer copy
 
-The goal is to keep `packages/render` as a pure renderer from `Receipt` to PNG, while keeping the generated receipt visually aligned with the landing-page example.
+The goal is to keep `packages/render` grounded in the `Receipt` contract while keeping the generated receipt visually aligned with the landing-page example.
+
+The current full renderer converts `Receipt` into a self-contained HTML document and screenshots it with a local Chromium-compatible browser. This gives the PNG the same paper texture and layout language as the landing-page receipt. The paper texture is embedded in the renderer package so compiled runtimes do not depend on repo-relative web assets.
+
+The planned lightweight renderer should remain behind an explicit option or feature flag. It should still consume `Receipt`, but it can trade visual fidelity for speed and avoid the browser dependency.
 
 ## Supported agents
 
@@ -182,7 +186,7 @@ token-receipt/
 ├── docs/                         # Public docs and product notes
 ├── packages/
 │   ├── core/                     # Log parsing, heuristics, analysis
-│   ├── render/                   # Receipt SVG and PNG rendering
+│   ├── render/                   # Receipt HTML and PNG rendering
 │   ├── runtime/                  # CLI and standalone runtime build
 │   ├── skills/                   # Codex and Claude Code skill wrappers
 │   ├── typescript-config/        # Shared TS config

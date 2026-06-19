@@ -44,14 +44,14 @@ try {
     const analysis = JSON.parse(
       readFileSync(join(options.outDir, "analysis.json"), "utf8"),
     ) as Analysis;
-    writeOutputs(analysis, options.outDir);
+    await writeOutputs(analysis, options.outDir);
     process.exit(0);
   }
 
   if (command === "generate") {
     const analysis = analyzeLogs(options);
     writeAnalysis(analysis, options.outDir);
-    writeOutputs(analysis, options.outDir);
+    await writeOutputs(analysis, options.outDir);
     console.log(
       JSON.stringify(
         {
@@ -81,7 +81,7 @@ try {
   process.exit(1);
 }
 
-function writeOutputs(analysis: Analysis, outDir: string) {
-  const png = renderReceiptPng(analysis.receipt);
+async function writeOutputs(analysis: Analysis, outDir: string) {
+  const png = await renderReceiptPng(analysis.receipt);
   writeFileSync(join(outDir, "receipt.png"), png);
 }
