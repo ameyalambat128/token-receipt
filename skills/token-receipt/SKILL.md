@@ -24,17 +24,40 @@ On first run, the helper script downloads the standalone Token Receipt runtime i
 
 ## How to use
 
-1. Run the bundled helper script with the user's requested filters if they gave any. Default to `--since 30d`.
-2. Read `token-receipt-output/analysis.json`, `receipt.json`, `share/x.txt`, and `share/linkedin.txt`.
-3. Show the receipt image path and summarize the funniest defensible takeaways.
-4. If the user wants share copy, refine the generated caption text without inventing unsupported metrics.
+1. Decide the provider before running the helper script.
+2. If the user explicitly asks for one provider, pass that exact `--provider` value.
+3. If the user explicitly asks for cross-agent output or comparison, pass `--provider all`.
+4. Otherwise determine which host agent you are running in. Use `codex`, `claude`, `kiro`, or `cursor` and pass the matching `--provider`.
+5. If you cannot determine the host agent confidently, say so briefly and fall back to `--provider all`.
+6. Pass the user's requested filters if they gave any. Default to `--since 30d`.
+7. Read `token-receipt-output/analysis.json`, `receipt.json`, `share/x.txt`, and `share/linkedin.txt`.
+8. Show the receipt image path and summarize the funniest defensible takeaways.
+9. If the user wants share copy, refine the generated caption text without inventing unsupported metrics.
+
+## Provider selection
+
+Use this precedence order every time:
+
+1. Explicit user provider request
+2. Explicit user request for cross-agent output with `--provider all`
+3. Host-agent default based on who you are
+4. Fallback to `--provider all` if host detection is uncertain
+
+Host-agent defaults:
+
+- Codex -> `--provider codex`
+- Claude Code -> `--provider claude`
+- Kiro -> `--provider kiro`
+- Cursor -> `--provider cursor`
+
+Do not ask the user which agent they are using just to choose the default provider. Infer it from the current host agent when possible.
 
 ## Commands
 
-Default run:
+Default host-aware run:
 
 ```bash
-scripts/generate.sh --since 30d
+scripts/generate.sh --provider <host-agent> --since 30d
 ```
 
 Examples:
@@ -42,7 +65,9 @@ Examples:
 ```bash
 scripts/generate.sh --provider codex --since 7d
 scripts/generate.sh --provider claude --since 7d
+scripts/generate.sh --provider cursor --since 7d
 scripts/generate.sh --provider kiro --since 7d
+scripts/generate.sh --provider all --since 30d
 scripts/generate.sh --project whoop-am --since 30d
 scripts/generate.sh --update-runtime --since 30d
 ```

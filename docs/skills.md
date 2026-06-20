@@ -25,6 +25,8 @@ The installed skill bootstraps a standalone macOS arm64 runtime into `~/Library/
 
 ## Usage
 
+When the skill is invoked inside a host agent such as Codex, Claude Code, Kiro, or Cursor, the skill instructions should pass the matching provider by default. If the user explicitly asks for cross-agent output, the skill should use `--provider all`. If the host agent cannot be identified confidently, the skill should also fall back to `--provider all`.
+
 Canonical local path:
 
 ```bash
