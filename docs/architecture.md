@@ -30,7 +30,7 @@ The current full renderer is HTML-first:
 - The wrinkled paper texture is embedded in `packages/render/src/paper-texture.generated.ts`, so the compiled runtime does not depend on repo-relative web assets.
 - If Chrome, Chromium, or Edge is installed, the renderer uses it. Otherwise, it installs Chrome Headless Shell into `~/Library/Caches/token-receipt/chromium`.
 
-This keeps receipt generation local while making the shareable PNG match the marketing-site visual direction. The tradeoff is that full rendering is heavier than the older SVG path because it needs a browser process and may download a browser on first use.
+This keeps receipt generation local while making the receipt PNG match the marketing-site visual direction. The tradeoff is that full rendering is heavier than the older SVG path because it needs a browser process and may download a browser on first use.
 
 The intended renderer modes are:
 

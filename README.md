@@ -4,7 +4,7 @@ Token Receipt turns Codex, Claude Code, and Kiro CLI logs into your coding-agent
 
 Token Receipt is a skill-first local tool for people using coding agents heavily and wanting one artifact that instantly shows how they work.
 
-It parses local agent logs, scores the most defensible forms of waste, renders a thermal-paper receipt PNG, and generates share-ready post copy grounded in real local habits.
+It parses local agent logs, scores the most defensible forms of waste, renders a thermal-paper receipt PNG, and generates optional share text grounded in real local habits.
 
 - Skill-first UX for Codex and Claude Code, with Kiro CLI session support
 - Screenshot-first artifact for agent-heavy developers
