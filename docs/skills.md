@@ -41,6 +41,8 @@ Agent-facing links:
 ~/.kiro/skills/token-receipt/scripts/generate.sh --since 30d
 ```
 
+On supported systems, the wrapper opens `receipt.png` after a successful run. Set `TOKEN_RECEIPT_DISABLE_OPEN=1` to skip that behavior in tests or automation.
+
 Kiro CLI logs are also included automatically when you run the runtime with `--provider kiro` or `--provider all`. Kiro spend is based on local credit usage rather than token-derived API pricing.
 
 Experimental Cursor local sessions are included automatically when you run the runtime with `--provider cursor` or `--provider all`. Cursor currently contributes behavior-rich local activity analysis, but local spend and token accounting are lower fidelity than Codex or Claude Code.
@@ -88,8 +90,7 @@ Every run writes to `token-receipt-output/` in the current working directory:
 - `analysis.json`
 - `receipt.json`
 - `receipt.png`
-- `share/x.txt`
-- `share/linkedin.txt`
+- `share.txt`
 
 `receipt.json` also contains the display metadata used by the PNG renderer so the generated receipt can stay visually aligned with the landing-page example.
 

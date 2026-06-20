@@ -22,13 +22,58 @@ done
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd -P)"
 LOCAL_RUNTIME_ENTRY="$REPO_ROOT/packages/runtime/src/cli.ts"
 LOCAL_RUNTIME_DIR="$REPO_ROOT/packages/runtime"
+RECEIPT_PATH="$OUT_DIR/receipt.png"
 
 run_local_runtime() {
   bun --cwd "$LOCAL_RUNTIME_DIR" ./src/cli.ts generate --out "$OUT_DIR" "${PASSTHROUGH_ARGS[@]}"
 }
 
+open_receipt() {
+  if [[ "${TOKEN_RECEIPT_DISABLE_OPEN:-0}" == "1" || ! -f "$RECEIPT_PATH" ]]; then
+    return 0
+  fi
+
+  case "$(uname -s)" in
+    Darwin)
+      command -v open >/dev/null && open "$RECEIPT_PATH" >/dev/null 2>&1 || true
+      ;;
+    Linux)
+      command -v xdg-open >/dev/null && xdg-open "$RECEIPT_PATH" >/dev/null 2>&1 || true
+      ;;
+    CYGWIN*|MINGW*|MSYS*)
+      if command -v explorer.exe >/dev/null; then
+        explorer.exe "$(cygpath -w "$RECEIPT_PATH" 2>/dev/null || printf '%s' "$RECEIPT_PATH")" >/dev/null 2>&1 || true
+      elif command -v cmd.exe >/dev/null; then
+        cmd.exe /c start "" "$RECEIPT_PATH" >/dev/null 2>&1 || true
+      fi
+      ;;
+  esac
+}
+
+run_and_finalize() {
+  local stdout_file
+  stdout_file="$(mktemp "${TMPDIR:-/tmp}/token-receipt.XXXXXX")"
+
+  if "$@" >"$stdout_file"; then
+    cat "$stdout_file"
+    rm -f "$stdout_file"
+    open_receipt
+    return 0
+  fi
+
+  local status=$?
+  cat "$stdout_file"
+  rm -f "$stdout_file"
+  return "$status"
+}
+
 if [[ -n "${TOKEN_RECEIPT_RUNTIME_PATH:-}" ]]; then
-  "$TOKEN_RECEIPT_RUNTIME_PATH" generate --out "$OUT_DIR" "${PASSTHROUGH_ARGS[@]}"
+  run_and_finalize "$TOKEN_RECEIPT_RUNTIME_PATH" generate --out "$OUT_DIR" "${PASSTHROUGH_ARGS[@]}"
+  exit 0
+fi
+
+if [[ -f "$LOCAL_RUNTIME_ENTRY" ]]; then
+  run_and_finalize bun --cwd "$LOCAL_RUNTIME_DIR" ./src/cli.ts generate --out "$OUT_DIR" "${PASSTHROUGH_ARGS[@]}"
   exit 0
 fi
 
@@ -39,12 +84,7 @@ else
 fi
 
 if BINARY_PATH="$("${INSTALL_COMMAND[@]}")"; then
-  "$BINARY_PATH" generate --out "$OUT_DIR" "${PASSTHROUGH_ARGS[@]}"
-  exit 0
-fi
-
-if [[ -f "$LOCAL_RUNTIME_ENTRY" ]]; then
-  run_local_runtime
+  run_and_finalize "$BINARY_PATH" generate --out "$OUT_DIR" "${PASSTHROUGH_ARGS[@]}"
   exit 0
 fi
 

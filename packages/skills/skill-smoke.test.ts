@@ -67,6 +67,7 @@ describe("token receipt skill", () => {
           cwd: workDir,
           env: {
             ...process.env,
+            TOKEN_RECEIPT_DISABLE_OPEN: "1",
             TOKEN_RECEIPT_RUNTIME_PATH: shimPath,
           },
           encoding: "utf8",
@@ -81,11 +82,8 @@ describe("token receipt skill", () => {
       expect(realpathSync(stdout.receipt)).toBe(
         realpathSync(join(outDir, "receipt.png")),
       );
-      expect(realpathSync(stdout.x)).toBe(
-        realpathSync(join(outDir, "share", "x.txt")),
-      );
-      expect(realpathSync(stdout.linkedin)).toBe(
-        realpathSync(join(outDir, "share", "linkedin.txt")),
+      expect(realpathSync(stdout.share)).toBe(
+        realpathSync(join(outDir, "share.txt")),
       );
 
       const analysis = JSON.parse(
@@ -110,16 +108,11 @@ describe("token receipt skill", () => {
         join(outDir, "analysis.json"),
         join(outDir, "receipt.json"),
         join(outDir, "receipt.png"),
-        join(outDir, "share", "x.txt"),
-        join(outDir, "share", "linkedin.txt"),
+        join(outDir, "share.txt"),
       ].forEach((path) => expect(existsSync(path)).toBe(true));
 
       expect(
-        readFileSync(join(outDir, "share", "x.txt"), "utf8").trim().length,
-      ).toBeGreaterThan(0);
-      expect(
-        readFileSync(join(outDir, "share", "linkedin.txt"), "utf8").trim()
-          .length,
+        readFileSync(join(outDir, "share.txt"), "utf8").trim().length,
       ).toBeGreaterThan(0);
     },
   );

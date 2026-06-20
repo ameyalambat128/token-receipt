@@ -6,6 +6,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -118,8 +119,7 @@ export type Analysis = {
   topSignals: WasteSignal[];
   receipt: Receipt;
   share: {
-    x: string;
-    linkedin: string;
+    text: string;
   };
 };
 
@@ -493,7 +493,7 @@ export function analyzeLogs(options: CliOptions): Analysis {
 
 export function writeAnalysis(analysis: Analysis, outDir: string) {
   ensureDir(outDir);
-  ensureDir(join(outDir, "share"));
+  rmSync(join(outDir, "share"), { recursive: true, force: true });
   writeFileSync(
     join(outDir, "analysis.json"),
     JSON.stringify(analysis, null, 2),
@@ -502,11 +502,7 @@ export function writeAnalysis(analysis: Analysis, outDir: string) {
     join(outDir, "receipt.json"),
     JSON.stringify(analysis.receipt, null, 2),
   );
-  writeFileSync(join(outDir, "share", "x.txt"), `${analysis.share.x}\n`);
-  writeFileSync(
-    join(outDir, "share", "linkedin.txt"),
-    `${analysis.share.linkedin}\n`,
-  );
+  writeFileSync(join(outDir, "share.txt"), `${analysis.share.text}\n`);
 }
 
 export function doctor(options: CliOptions) {
@@ -1338,24 +1334,14 @@ function buildShareCopy(receipt: Receipt) {
   const providerLabel = formatProviderList(receipt.providerNames);
 
   return {
-    x: [
-      `I spent $${formatUsd(receipt.totalUsd)} of imaginary agent money this month.`,
+    text: [
+      `My coding-agent bill this month: $${formatUsd(receipt.totalUsd)} of imaginary money.`,
       topWaste ? `Biggest line item: ${topWaste.label}.` : null,
-      `Generated from my local ${providerLabel} logs.`,
+      `Generated from my local ${providerLabel} logs with Token Receipt.`,
       "satirical estimate based on local agent logs",
     ]
       .filter((line): line is string => Boolean(line))
       .join("\n"),
-    linkedin: [
-      `This month my coding-agent bill came out to $${formatUsd(receipt.totalUsd)} in completely unserious but annoyingly plausible expenses.`,
-      topWaste
-        ? `The biggest offender was ${topWaste.label.toLowerCase()}.`
-        : null,
-      `Token Receipt turns local ${providerLabel} logs into a satirical receipt, a thermal-paper PNG, and share-ready copy.`,
-      "satirical estimate based on local agent logs",
-    ]
-      .filter((line): line is string => Boolean(line))
-      .join("\n\n"),
   };
 }
 

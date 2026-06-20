@@ -75,8 +75,7 @@ This is the agent-compatible text version of the current install and execution f
    - writes analysis.json
    - writes receipt.json
    - writes receipt.png
-   - writes share/x.txt
-   - writes share/linkedin.txt
+   - writes share.txt
 7. All generated artifacts are written to:
    ./token-receipt-output
 8. The skill reads those generated files and writes the final in-session roast.
