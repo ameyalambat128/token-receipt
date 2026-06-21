@@ -1257,7 +1257,7 @@ function buildReceipt({
   });
 
   return {
-    title: "Your monthly AI bill",
+    title: "Token Receipt",
     subtitle: "officially itemized",
     providerNames,
     totalUsd,
@@ -1981,13 +1981,13 @@ function buildReceiptActivity(
       endLabel: formatMonthLabel(end),
       columns: columns.map((column, columnIndex) =>
         column.map((_, rowIndex) =>
-          Math.min(
-            4,
-            Math.max(
-              0,
-              Math.round(
-                2 + Math.sin((columnIndex + 1) * 0.65 + rowIndex * 0.85) * 1.7,
-              ),
+          Math.max(
+            0,
+            Math.min(
+              1,
+              0.14 +
+                (Math.sin((columnIndex + 1) * 0.65 + rowIndex * 0.85) + 1) *
+                  0.18,
             ),
           ),
         ),
@@ -2008,29 +2008,43 @@ function buildReceiptActivity(
       Math.max(0, Math.floor(((time - start.getTime()) / span) * 16)),
     );
     const rowIndex = date.getDay();
-    const intensity = Math.min(
-      4,
-      1 +
-        Math.floor(
-          Math.log10(
-            Math.max(10, session.functionCalls + session.outputTokens / 1500),
-          ),
-        ),
+    const intensity = Math.log1p(
+      session.functionCalls * 3 +
+        session.outputTokens / 900 +
+        session.cachedInputTokens / 400_000 +
+        session.reasoningTokens / 500,
     );
 
     const column = columns[columnIndex];
 
     if (!column) return;
 
-    column[rowIndex] = Math.min(4, (column[rowIndex] ?? 0) + intensity);
+    column[rowIndex] = (column[rowIndex] ?? 0) + intensity;
   });
+
+  const nonZeroCells = columns.flat().filter((value) => value > 0);
+  const minCell = Math.min(...nonZeroCells);
+  const maxCell = Math.max(...nonZeroCells);
+  const normalizedColumns =
+    nonZeroCells.length === 0
+      ? columns
+      : columns.map((column) =>
+          column.map((value) => {
+            if (value <= 0) return 0;
+            if (maxCell === minCell) return 1;
+            return Math.max(
+              0.12,
+              Math.min(1, (value - minCell) / (maxCell - minCell)),
+            );
+          }),
+        );
 
   return {
     title: "Got Helped",
     periodLabel: formatPeriodLabel(since),
     startLabel: formatMonthLabel(start),
     endLabel: formatMonthLabel(end),
-    columns,
+    columns: normalizedColumns,
   };
 }
 

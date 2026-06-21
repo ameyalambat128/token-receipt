@@ -232,7 +232,7 @@ export default function Home() {
                 Cursor receipts currently prioritize tool activity over exact
                 spend accounting
               </li>
-              <li>Builds a thermal-paper PNG plus ready-to-edit post copy</li>
+              <li>Builds a thermal-paper PNG plus a generic share caption</li>
               <li>Uses skills so the host agent can write the final roast</li>
             </ul>
           </section>

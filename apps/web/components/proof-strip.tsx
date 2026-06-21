@@ -3,19 +3,22 @@
 import { motion, useReducedMotion, type Variants } from "framer-motion";
 
 const receiptRows = [
-  { qty: "01", item: "Context window emotional support", amount: "$2,488" },
-  { qty: "02", item: "MCP tool tourism", amount: "$941" },
-  { qty: "03", item: "Repeated shell confidence loops", amount: "$422" },
-  { qty: "04", item: "Docs tab multiplication", amount: "$203" },
-  { qty: "05", item: "One more quick refactor", amount: "$96" },
-  { qty: "06", item: "Agent handoff drama", amount: "$58" },
+  { qty: "01", item: "Actual useful LLM work", amount: "$781" },
+  { qty: "02", item: "Context window emotional support", amount: "$2,488" },
+  { qty: "03", item: "MCP tool tourism", amount: "$0.94" },
+  { qty: "++", item: "3 more low-signal habits skipped", amount: "" },
 ];
 
 const statRows = [
-  { label: "Prompt count", value: "184" },
+  { label: "Sessions", value: "184" },
   { label: "Tool calls", value: "612" },
   { label: "Tokens burned", value: "1.92M" },
   { label: "Peak spiral", value: "2:14 AM" },
+];
+
+const detailRows = [
+  { label: "Avoidable waste", value: "$3,427" },
+  { label: "Useful work", value: "$781" },
 ];
 
 const activityGraph = [
@@ -37,7 +40,8 @@ const activityGraph = [
   [0, 1, 3, 2, 1, 0, 0],
 ];
 
-const activityCellOpacity = ["0.14", "0.34", "0.52", "0.74", "0.96"];
+const formatActivityOpacity = (value: number) =>
+  String((0.08 + Math.max(0, Math.min(1, value)) * 0.88).toFixed(2));
 
 export function ProofStrip() {
   const prefersReducedMotion = useReducedMotion();
@@ -131,10 +135,13 @@ export function ProofStrip() {
           <div className="relative z-10 font-mono">
             <motion.div variants={itemVariants} className="text-center">
               <p className="text-[2.45rem] font-semibold uppercase tracking-[-0.06em] sm:text-[2.55rem]">
-                TOKEN RECEIPT
+                Token Receipt
               </p>
               <p className="mt-2 text-[0.92rem] uppercase tracking-[0.24em] text-stone-600 sm:text-[0.95rem]">
-                Last 30 Days
+                Officially Itemized
+              </p>
+              <p className="mt-3 text-[0.72rem] uppercase tracking-[0.18em] text-stone-500 sm:text-[0.78rem]">
+                Codex + Claude Code + Cursor Experimental
               </p>
             </motion.div>
 
@@ -162,7 +169,7 @@ export function ProofStrip() {
                 <motion.div
                   key={row.item}
                   variants={itemVariants}
-                  className="grid grid-cols-[2rem_minmax(0,1fr)_4.8rem] gap-3 sm:grid-cols-[2.6rem_minmax(0,1fr)_5.1rem]"
+                  className={`grid grid-cols-[2rem_minmax(0,1fr)_4.8rem] gap-3 sm:grid-cols-[2.6rem_minmax(0,1fr)_5.1rem] ${row.qty === "++" ? "text-stone-500" : ""}`}
                 >
                   <span>{row.qty}</span>
                   <span className="pr-2">{row.item}</span>
@@ -184,7 +191,7 @@ export function ProofStrip() {
                   <span>{row.value}</span>
                 </div>
               ))}
-              <div className="mt-2 flex items-center justify-between gap-4 text-[0.98rem] sm:text-[1.05rem]">
+              <div className="mt-3 flex items-center justify-between gap-4 border-t border-dashed border-stone-500/70 pt-3 text-[1.5rem] font-semibold tracking-[-0.04em] sm:text-[1.7rem]">
                 <span>TOTAL:</span>
                 <span>$4,208</span>
               </div>
@@ -194,9 +201,15 @@ export function ProofStrip() {
               variants={itemVariants}
               className="mt-4 space-y-1 text-[0.82rem] leading-6 sm:text-[0.92rem]"
             >
-              <p>CARD: **** **** **** 2026</p>
-              <p>AUTH CODE: 612184</p>
-              <p>CARDHOLDER: AMEYA</p>
+              {detailRows.map((row) => (
+                <p
+                  key={row.label}
+                  className="flex items-center justify-between gap-4"
+                >
+                  <span>{row.label}:</span>
+                  <span>{row.value}</span>
+                </p>
+              ))}
             </motion.div>
 
             <motion.div variants={itemVariants} className="mt-8 text-center">
@@ -226,7 +239,7 @@ export function ProofStrip() {
                       <span
                         key={`${columnIndex}-${rowIndex}`}
                         className="block h-[8px] w-[8px] rounded-[2px] bg-black sm:h-[10px] sm:w-[10px]"
-                        style={{ opacity: activityCellOpacity[value] }}
+                        style={{ opacity: formatActivityOpacity(value / 4) }}
                       />
                     ))}
                   </div>
@@ -243,7 +256,10 @@ export function ProofStrip() {
               className="mt-4 text-center text-[0.82rem] leading-5 text-stone-500"
             >
               <p className="uppercase tracking-[0.22em]">
-                sample agentic usage stats
+                generated from local agent logs
+              </p>
+              <p className="mt-1 tracking-[0.08em]">
+                skills.sh/ameyalambat128/token-receipt
               </p>
             </motion.div>
           </div>

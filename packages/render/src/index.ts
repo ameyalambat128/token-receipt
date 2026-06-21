@@ -13,8 +13,6 @@ import puppeteer from "puppeteer-core";
 import type { Receipt, ReceiptLineItem } from "@token-receipt/core";
 import { paperTextureDataUrl } from "./paper-texture.generated.js";
 
-const activityCellOpacity = ["0.14", "0.34", "0.52", "0.74", "0.96"];
-
 export function renderReceiptHtml(receipt: Receipt) {
   const rows = buildReceiptRows(receipt.lines);
   const stats = [
@@ -162,6 +160,15 @@ export function renderReceiptHtml(receipt: Receipt) {
         text-transform: uppercase;
       }
 
+      .provider-line {
+        margin: 16px 0 0;
+        color: #6b6256;
+        font-size: 12px;
+        letter-spacing: 0.18em;
+        line-height: 1.35;
+        text-transform: uppercase;
+      }
+
       .meta {
         margin-top: 32px;
         color: #1f1b17;
@@ -211,6 +218,15 @@ export function renderReceiptHtml(receipt: Receipt) {
         color: #7d433e;
       }
 
+      .line-item.meta {
+        color: #6b6256;
+        font-size: 13px;
+      }
+
+      .line-item.meta .amount {
+        color: transparent;
+      }
+
       .stats {
         margin-top: 20px;
         border-bottom: 1px dashed rgba(120, 113, 108, 0.7);
@@ -230,8 +246,13 @@ export function renderReceiptHtml(receipt: Receipt) {
       }
 
       .stat-row.total {
-        margin-top: 8px;
-        font-size: 17px;
+        margin-top: 10px;
+        border-top: 1px dashed rgba(120, 113, 108, 0.7);
+        padding-top: 12px;
+        font-size: 27px;
+        font-weight: 600;
+        letter-spacing: -0.04em;
+        line-height: 1.1;
       }
 
       .details {
@@ -319,6 +340,7 @@ export function renderReceiptHtml(receipt: Receipt) {
 
       .note .disclaimer {
         margin-top: 4px;
+        letter-spacing: 0.08em;
       }
     </style>
   </head>
@@ -331,8 +353,9 @@ export function renderReceiptHtml(receipt: Receipt) {
 
         <div class="receipt-content">
           <header class="heading">
-            <p class="title">TOKEN RECEIPT</p>
-            <p class="subtitle">${escapeHtml(receipt.display.activity.periodLabel)}</p>
+            <p class="title">${escapeHtml(receipt.title)}</p>
+            <p class="subtitle">${escapeHtml(receipt.subtitle)}</p>
+            <p class="provider-line">${escapeHtml(receipt.display.providerLabel)}</p>
           </header>
 
           <section class="meta">
@@ -401,7 +424,7 @@ export function renderReceiptHtml(receipt: Receipt) {
                     ${column
                       .map(
                         (value, rowIndex) =>
-                          `<span class="activity-cell" data-row="${rowIndex}" style="opacity: ${activityCellOpacity[value] ?? activityCellOpacity[0]}"></span>`,
+                          `<span class="activity-cell" data-row="${rowIndex}" style="opacity: ${formatActivityOpacity(value)}"></span>`,
                       )
                       .join("")}
                   </div>`,
@@ -416,7 +439,7 @@ export function renderReceiptHtml(receipt: Receipt) {
 
           <section class="note">
             <p class="loud">${escapeHtml(receipt.display.note)}</p>
-            <p class="disclaimer">${escapeHtml(receipt.disclaimer)}</p>
+            <p class="disclaimer">${escapeHtml(receipt.display.footerLink)}</p>
           </section>
         </div>
       </article>
@@ -466,17 +489,30 @@ export async function renderReceiptPng(receipt: Receipt) {
   }
 }
 
-const buildReceiptRows = (lines: ReceiptLineItem[]) =>
-  lines.map((line, index) => ({
-    qty: String(index + 1).padStart(2, "0"),
-    label: line.label,
-    amount: formatMoney(line.amountUsd),
-    kind: line.kind === "waste" ? "waste" : "summary",
-  }));
+const buildReceiptRows = (lines: ReceiptLineItem[]) => [
+  ...lines
+    .filter((line, index) => index === 0 || line.amountUsd > 0)
+    .map((line, index) => ({
+      qty: String(index + 1).padStart(2, "0"),
+      label: line.label,
+      amount: formatMoney(line.amountUsd),
+      kind: line.kind === "waste" ? "waste" : "summary",
+    })),
+  ...(lines.filter((line, index) => index > 0 && line.amountUsd <= 0).length
+    ? [
+        {
+          qty: "++",
+          label: `${lines.filter((line, index) => index > 0 && line.amountUsd <= 0).length} more low-signal habits skipped`,
+          amount: "",
+          kind: "meta" as const,
+        },
+      ]
+    : []),
+];
 
 const buildDetailRows = (receipt: Receipt) =>
   receipt.display.details.filter(
-    (row) => row.label !== "AVOIDABLE WASTE" && row.label !== "USEFUL WORK",
+    (row) => row.label !== "CARD" && row.label !== "AUTH CODE",
   );
 
 const findChromiumExecutable = async () => {
@@ -552,9 +588,12 @@ const findPlaywrightChromiumExecutables = () => {
 
 const formatMoney = (value: number) =>
   `$${value.toLocaleString("en-US", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    minimumFractionDigits: value > 0 && value < 1 ? 2 : 0,
+    maximumFractionDigits: value > 0 && value < 1 ? 2 : 0,
   })}`;
+
+const formatActivityOpacity = (value: number) =>
+  String((0.08 + Math.max(0, Math.min(1, value)) * 0.88).toFixed(2));
 
 function escapeHtml(value: string) {
   return value
