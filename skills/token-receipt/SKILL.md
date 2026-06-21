@@ -30,11 +30,12 @@ On first run, the helper script downloads the standalone Token Receipt runtime i
 4. Otherwise determine which host agent you are running in. Use `codex`, `claude`, `kiro`, or `cursor` and pass the matching `--provider`.
 5. If you cannot determine the host agent confidently, say so briefly and fall back to `--provider all`.
 6. Pass the user's requested filters if they gave any. Default to `--since 30d`.
-7. Read `token-receipt-output/analysis.json`, `receipt.json`, and `share.txt`.
-8. Tell the user the receipt opens locally by default and include the absolute `receipt.png` path in the response.
-9. Present the generated caption in a short `Share` section using a fenced `text` block.
-10. Summarize the funniest defensible takeaways grounded in `analysis.json`.
-11. If the user wants share copy, refine the generated generic caption text without inventing unsupported metrics.
+7. Read the JSON stdout from `scripts/generate.sh` first and use its `outDir`, `receipt`, and `share` paths.
+8. Then read `analysis.json`, `receipt.json`, and `share.txt` from that reported `outDir`.
+9. Tell the user the receipt opens locally by default and include the absolute `receipt.png` path in the response.
+10. Present the generated caption in a short `Share` section using a fenced `text` block.
+11. Summarize the funniest defensible takeaways grounded in `analysis.json`.
+12. If the user wants share copy, refine the generated generic caption text without inventing unsupported metrics.
 
 ## Provider selection
 

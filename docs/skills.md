@@ -85,7 +85,13 @@ The release workflow validates the workspace, builds the runtime, and uploads th
 
 ## Output
 
-Every run writes to `token-receipt-output/` in the current working directory:
+Repo-scoped runs write to `token-receipt-output/` in the current working directory.
+
+Global runs with no repo context write to `~/Library/Application Support/token-receipt/runs/<timestamp>/`.
+
+Pass `--out <path>` to export artifacts somewhere explicit.
+
+Each run directory contains:
 
 - `analysis.json`
 - `receipt.json`

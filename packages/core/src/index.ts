@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { basename, isAbsolute, join } from "node:path";
+import { basename, isAbsolute, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
   existsSync,
@@ -298,12 +298,12 @@ const fallbackClaudeRateCard = {
 const kiroCreditRateUsd = 0.04;
 
 export function defaultOptions(): CliOptions {
-  const baseCwd = process.env.INIT_CWD ?? process.cwd();
+  const baseCwd = workingDir();
 
   return {
     provider: "all",
     since: "30d",
-    outDir: join(baseCwd, "token-receipt-output"),
+    outDir: defaultOutDirForCwd(baseCwd),
     anonymize: true,
   };
 }
@@ -317,7 +317,7 @@ export function parseArgs(argv: string[]): {
   options: CliOptions;
 } {
   const options = defaultOptions();
-  const baseCwd = process.env.INIT_CWD ?? process.cwd();
+  const baseCwd = workingDir();
   const [command = "generate", ...rest] = argv;
 
   for (let index = 0; index < rest.length; index += 1) {
@@ -1589,6 +1589,85 @@ function anonymizeProject(input: string) {
 
 function homeDir() {
   return process.env.HOME ?? process.env.USERPROFILE ?? "";
+}
+
+function workingDir() {
+  return process.env.INIT_CWD ?? process.env.PWD ?? process.cwd();
+}
+
+function appSupportDir() {
+  if (process.env.TOKEN_RECEIPT_APP_SUPPORT_DIR) {
+    return process.env.TOKEN_RECEIPT_APP_SUPPORT_DIR;
+  }
+
+  if (process.platform === "darwin") {
+    return join(homeDir(), "Library", "Application Support", "token-receipt");
+  }
+
+  if (process.platform === "win32") {
+    return join(
+      process.env.LOCALAPPDATA ?? join(homeDir(), "AppData", "Local"),
+      "token-receipt",
+    );
+  }
+
+  return join(
+    process.env.XDG_STATE_HOME ?? join(homeDir(), ".local", "state"),
+    "token-receipt",
+  );
+}
+
+function defaultRunId() {
+  if (process.env.TOKEN_RECEIPT_RUN_ID) {
+    return process.env.TOKEN_RECEIPT_RUN_ID;
+  }
+
+  return new Date()
+    .toISOString()
+    .replaceAll(":", "-")
+    .replace(/\.\d{3}Z$/, "Z");
+}
+
+function isWithinDir(path: string, root: string) {
+  const fromRoot = relative(resolve(root), resolve(path));
+  return fromRoot === "" || (!fromRoot.startsWith("..") && fromRoot !== ".");
+}
+
+function isSkillInstallDir(path: string) {
+  const home = homeDir();
+
+  return [
+    join(home, ".agents", "skills", "token-receipt"),
+    join(home, ".claude", "skills", "token-receipt"),
+    join(home, ".codex", "skills", "token-receipt"),
+    join(home, ".kiro", "skills", "token-receipt"),
+  ].some((root) => isWithinDir(path, root));
+}
+
+function hasGitWorktree(path: string) {
+  let current = resolve(path);
+
+  while (true) {
+    if (existsSync(join(current, ".git"))) {
+      return true;
+    }
+
+    const parent = resolve(current, "..");
+
+    if (parent === current) {
+      return false;
+    }
+
+    current = parent;
+  }
+}
+
+export function defaultOutDirForCwd(path = workingDir()) {
+  if (isSkillInstallDir(path) || !hasGitWorktree(path)) {
+    return join(appSupportDir(), "runs", defaultRunId());
+  }
+
+  return join(path, "token-receipt-output");
 }
 
 function getCursorRootPath() {

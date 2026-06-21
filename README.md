@@ -24,6 +24,8 @@ npx skills add ameyalambat128/token-receipt --skill token-receipt
 
 On first use, the skill downloads the standalone macOS arm64 runtime from GitHub Releases.
 
+By default, repo-scoped runs write to `./token-receipt-output`. Global runs without a repo context write to `~/Library/Application Support/token-receipt/runs/<timestamp>/`. Pass `--out <path>` to export somewhere explicit.
+
 More install details and runtime notes live in [`docs/skills.md`](/Users/ameya/Code/oss/token-receipt/docs/skills.md).
 
 ## Usage
