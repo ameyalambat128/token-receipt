@@ -90,6 +90,7 @@ export type Receipt = {
   disclaimer: string;
   display: {
     orderLabel: string;
+    coverageLabel: string;
     generatedDate: string;
     providerLabel: string;
     stats: ReceiptDisplayRow[];
@@ -1255,6 +1256,11 @@ function buildReceipt({
     totals,
     apiEquivalentCostUsd,
   });
+  const coverageLabel = buildReceiptCoverageLabel(
+    generatedAt,
+    options.since,
+    totals.sessions,
+  );
 
   return {
     title: "Token Receipt",
@@ -1278,7 +1284,8 @@ function buildReceipt({
     disclaimer: "satirical estimate based on local agent logs",
     display: {
       orderLabel,
-      generatedDate: formatReceiptDate(generatedAt),
+      coverageLabel,
+      generatedDate: `GENERATED ${formatReceiptDate(generatedAt)}`,
       providerLabel,
       stats: [
         {
@@ -1936,6 +1943,28 @@ function formatReceiptDate(value: string) {
     year: "numeric",
   })
     .format(new Date(value))
+    .toUpperCase();
+}
+
+function buildReceiptCoverageLabel(
+  generatedAt: string,
+  since: string,
+  sessionCount: number,
+) {
+  const days = parseSinceDays(since) ?? 30;
+  const end = new Date(generatedAt);
+  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+  const sessionLabel = `${formatCount(sessionCount)} SESSION${sessionCount === 1 ? "" : "S"}`;
+
+  return `${sessionLabel} FROM ${formatReceiptShortDate(start)} TO ${formatReceiptShortDate(end)}`;
+}
+
+function formatReceiptShortDate(value: Date) {
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+  })
+    .format(value)
     .toUpperCase();
 }
 

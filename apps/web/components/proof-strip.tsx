@@ -150,7 +150,8 @@ export function ProofStrip() {
               className="mt-8 space-y-1 text-[0.88rem] leading-6 sm:text-[0.95rem]"
             >
               <p>ORDER #0001 FOR AMEYA</p>
-              <p>MONDAY, JUNE 8, 2026</p>
+              <p>184 SESSIONS FROM MAY 10 TO JUNE 8</p>
+              <p>GENERATED MONDAY, JUNE 8, 2026</p>
             </motion.div>
 
             <motion.div

@@ -360,6 +360,7 @@ export function renderReceiptHtml(receipt: Receipt) {
 
           <section class="meta">
             <div>${escapeHtml(receipt.display.orderLabel)}</div>
+            <div>${escapeHtml(receipt.display.coverageLabel)}</div>
             <div>${escapeHtml(receipt.display.generatedDate)}</div>
           </section>
 
