@@ -27,21 +27,28 @@ The installed skill bootstraps a standalone macOS arm64 runtime into `~/Library/
 
 When the skill is invoked inside a host agent such as Codex, Claude Code, Kiro, or Cursor, the skill instructions should pass the matching provider by default. If the user explicitly asks for cross-agent output, the skill should use `--provider all`. If the host agent cannot be identified confidently, the skill should also fall back to `--provider all`.
 
-Canonical local path:
+Primary usage inside the coding session:
+
+```text
+/token-receipt
+```
+
+Optional in-session prompt:
+
+```text
+/token-receipt Generate a receipt for my last 30 days of agent usage.
+```
+
+On supported systems, the wrapper opens `receipt.png` after a successful run. Set `TOKEN_RECEIPT_DISABLE_OPEN=1` to skip that behavior in tests or automation.
+
+Manual wrapper paths for debugging or direct shell usage:
 
 ```bash
 ~/.agents/skills/token-receipt/scripts/generate.sh --since 30d
-```
-
-Agent-facing links:
-
-```bash
 ~/.codex/skills/token-receipt/scripts/generate.sh --since 30d
 ~/.claude/skills/token-receipt/scripts/generate.sh --since 30d
 ~/.kiro/skills/token-receipt/scripts/generate.sh --since 30d
 ```
-
-On supported systems, the wrapper opens `receipt.png` after a successful run. Set `TOKEN_RECEIPT_DISABLE_OPEN=1` to skip that behavior in tests or automation.
 
 Kiro CLI logs are also included automatically when you run the runtime with `--provider kiro` or `--provider all`. Kiro spend is based on local credit usage rather than token-derived API pricing.
 

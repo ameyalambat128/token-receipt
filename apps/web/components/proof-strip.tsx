@@ -133,7 +133,7 @@ export function ProofStrip() {
                 Officially Itemized
               </p>
               <p className="mt-3 text-[0.72rem] uppercase tracking-[0.18em] text-stone-500 sm:text-[0.78rem]">
-                Codex + Claude Code + Cursor Experimental
+                Codex + Claude Code + Kiro CLI + Cursor Experimental
               </p>
             </motion.div>
 

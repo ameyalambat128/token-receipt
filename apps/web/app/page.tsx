@@ -97,9 +97,9 @@ export default function Home() {
     "npx skills add ameyalambat128/token-receipt --skill token-receipt";
   const repoInstallCommand = "bun install && bun run skill:install";
   const codexPrompt =
-    "$token-receipt Generate a receipt for my last 30 days of agent usage.";
+    "/token-receipt Generate a receipt for my last 30 days of agent usage.";
   const claudePrompt =
-    "Use token-receipt to itemize my last 30 days of Codex, Claude Code, Kiro CLI, and Cursor usage.";
+    "/token-receipt Generate a receipt for my last 30 days of Codex, Claude Code, Kiro CLI, and Cursor usage.";
   const doctorCommand = "bun run -F token-receipt doctor";
   const runtimeCommand =
     "bun run -F token-receipt generate -- --provider all --since 30d --out ./token-receipt-output";
