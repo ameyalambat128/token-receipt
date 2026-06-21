@@ -85,11 +85,11 @@ The release workflow validates the workspace, builds the runtime, and uploads th
 
 ## Output
 
-Repo-scoped runs write to `token-receipt-output/` in the current working directory.
+Installed skill runs are global-first today and write to `~/Library/Application Support/token-receipt/runs/<timestamp>/`.
 
-Global runs with no repo context write to `~/Library/Application Support/token-receipt/runs/<timestamp>/`.
+Repo-scoped output in `token-receipt-output/` is only reliable for direct repo runs where the process actually executes with a project `cwd`.
 
-Pass `--out <path>` to export artifacts somewhere explicit.
+Pass `--out <path>` to export artifacts somewhere explicit in either mode.
 
 Each run directory contains:
 

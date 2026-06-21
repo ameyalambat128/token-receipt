@@ -31,7 +31,8 @@ bun run runtime:build:darwin-arm64
 
 - The skill is installed globally under the user's agent skill directory.
 - The runtime binary is installed per-user on macOS.
-- Generated receipt output stays repo-local when you run inside a git worktree, and falls back to app-managed run storage for global runs.
+- Installed skill runs are global-first today.
+- Repo-scoped output is only reliable when the process actually runs with a project `cwd`, such as a direct repo invocation.
 
 macOS paths:
 
@@ -78,8 +79,8 @@ This is the agent-compatible text version of the current install and execution f
    - writes receipt.png
    - writes share.txt
 7. All generated artifacts are written to:
-   - `./token-receipt-output` for repo-scoped runs
-   - `~/Library/Application Support/token-receipt/runs/<timestamp>/` for global runs
+   - `~/Library/Application Support/token-receipt/runs/<timestamp>/` for installed skill runs by default
+   - `./token-receipt-output` only when the process truly runs with a repo `cwd`
 8. The skill reads those generated files and writes the final in-session roast.
 ```
 

@@ -16,7 +16,8 @@ Token Receipt is a skill-first local tool. The skill layer handles agent-facing 
 2. `scripts/generate.sh` ensures the standalone runtime is installed.
 3. The runtime analyzes local Codex, Claude Code, and Kiro CLI logs, plus experimental local Cursor session artifacts.
 4. The runtime writes `analysis.json`, `receipt.json`, `receipt.png`, and share copy into a resolved run directory.
-   Repo-scoped runs use `./token-receipt-output`. Global runs with no repo context use `~/Library/Application Support/token-receipt/runs/<timestamp>/` unless `--out` is passed.
+   Installed skill runs default to `~/Library/Application Support/token-receipt/runs/<timestamp>/`.
+   Repo-scoped runs only use `./token-receipt-output` when the process actually executes with a repo `cwd`, unless `--out` is passed.
 5. The host agent reads those artifacts and writes the in-session summary or roast.
 
 ## Receipt rendering model

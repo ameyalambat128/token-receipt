@@ -12,6 +12,8 @@ metadata:
 
 A packaged local skill that ensures the Token Receipt macOS runtime is installed, produces a thermal-paper PNG plus share text, opens the receipt locally, and then uses those structured facts to help write the final roast.
 
+The installed skill should be treated as a global-first invocation path unless the host explicitly preserves a project `cwd` or the user passes `--out`.
+
 ## Setup check
 
 If the bundled `scripts/generate.sh` helper is missing, tell the user to install the skill with:
