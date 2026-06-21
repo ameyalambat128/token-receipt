@@ -1832,7 +1832,8 @@ function stableStringify(input: unknown): string {
 
 function buildDemoAnalysis(options: CliOptions): Analysis {
   const generatedAt = new Date().toISOString();
-  const providerNames = ["codex", "claude"];
+  const providerNames =
+    options.provider === "all" ? ["codex", "claude"] : [options.provider];
   const totals = {
     sessions: 12,
     inputTokens: 1_285_000,
