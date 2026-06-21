@@ -37,7 +37,7 @@ describe("token receipt skill", () => {
       const shimPath = join(tempRoot, "token-receipt-runtime-host");
       const outDir = join(workDir, "token-receipt-output");
 
-      mkdirSync(workDir, { recursive: true });
+      mkdirSync(join(workDir, ".git"), { recursive: true });
 
       writeFileSync(
         shimPath,
@@ -97,7 +97,7 @@ describe("token receipt skill", () => {
       const shimPath = join(tempRoot, "token-receipt-runtime");
       const outDir = join(workDir, "token-receipt-output");
 
-      mkdirSync(workDir, { recursive: true });
+      mkdirSync(join(workDir, ".git"), { recursive: true });
 
       writeFileSync(
         shimPath,
@@ -174,6 +174,135 @@ describe("token receipt skill", () => {
       expect(
         readFileSync(join(outDir, "share.txt"), "utf8").trim().length,
       ).toBeGreaterThan(0);
+    },
+  );
+
+  test(
+    "generate.sh uses app-managed storage for global runs",
+    { timeout: 15000 },
+    () => {
+      const runtimeDir = join(repoRoot, "packages", "runtime");
+      const generateScript = join(
+        repoRoot,
+        "skills",
+        "token-receipt",
+        "scripts",
+        "generate.sh",
+      );
+      const homeDir = join(tempRoot, "global-home");
+      const workDir = join(homeDir, ".claude", "skills", "token-receipt");
+      const shimPath = join(tempRoot, "token-receipt-runtime-global");
+      const appSupportDir = join(tempRoot, "global-app-support");
+      const outDir = join(appSupportDir, "runs", "2026-06-21T14-32-10Z");
+
+      mkdirSync(workDir, { recursive: true });
+
+      writeFileSync(
+        shimPath,
+        [
+          "#!/bin/bash",
+          "set -euo pipefail",
+          `exec "${process.execPath}" --cwd "${runtimeDir}" ./src/cli.ts "$@"`,
+          "",
+        ].join("\n"),
+      );
+      chmodSync(shimPath, 0o755);
+
+      const result = spawnSync(
+        "bash",
+        [
+          generateScript,
+          "--provider",
+          "codex",
+          "--since",
+          "7d",
+          "--seed",
+          "demo",
+        ],
+        {
+          cwd: workDir,
+          env: {
+            ...process.env,
+            HOME: homeDir,
+            TOKEN_RECEIPT_APP_SUPPORT_DIR: appSupportDir,
+            TOKEN_RECEIPT_DISABLE_OPEN: "1",
+            TOKEN_RECEIPT_RUN_ID: "2026-06-21T14-32-10Z",
+            TOKEN_RECEIPT_RUNTIME_PATH: shimPath,
+          },
+          encoding: "utf8",
+        },
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe("");
+
+      const stdout = JSON.parse(result.stdout);
+      expect(realpathSync(stdout.outDir)).toBe(realpathSync(outDir));
+      expect(existsSync(join(outDir, "receipt.png"))).toBe(true);
+    },
+  );
+
+  test(
+    "generate.sh respects explicit out paths for global runs",
+    { timeout: 15000 },
+    () => {
+      const runtimeDir = join(repoRoot, "packages", "runtime");
+      const generateScript = join(
+        repoRoot,
+        "skills",
+        "token-receipt",
+        "scripts",
+        "generate.sh",
+      );
+      const homeDir = join(tempRoot, "global-home-explicit");
+      const workDir = join(homeDir, ".claude", "skills", "token-receipt");
+      const shimPath = join(tempRoot, "token-receipt-runtime-global-explicit");
+      const outDir = join(workDir, "exports", "receipt");
+
+      mkdirSync(workDir, { recursive: true });
+
+      writeFileSync(
+        shimPath,
+        [
+          "#!/bin/bash",
+          "set -euo pipefail",
+          `exec "${process.execPath}" --cwd "${runtimeDir}" ./src/cli.ts "$@"`,
+          "",
+        ].join("\n"),
+      );
+      chmodSync(shimPath, 0o755);
+
+      const result = spawnSync(
+        "bash",
+        [
+          generateScript,
+          "--provider",
+          "codex",
+          "--since",
+          "7d",
+          "--seed",
+          "demo",
+          "--out",
+          "./exports/receipt",
+        ],
+        {
+          cwd: workDir,
+          env: {
+            ...process.env,
+            HOME: homeDir,
+            TOKEN_RECEIPT_DISABLE_OPEN: "1",
+            TOKEN_RECEIPT_RUNTIME_PATH: shimPath,
+          },
+          encoding: "utf8",
+        },
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe("");
+
+      const stdout = JSON.parse(result.stdout);
+      expect(realpathSync(stdout.outDir)).toBe(realpathSync(outDir));
+      expect(existsSync(join(outDir, "receipt.png"))).toBe(true);
     },
   );
 });
