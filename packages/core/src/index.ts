@@ -6,6 +6,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from "node:fs";
@@ -72,6 +73,7 @@ export type ReceiptActivity = {
   periodLabel: string;
   startLabel: string;
   endLabel: string;
+  legendLabel: string;
   columns: number[][];
 };
 
@@ -89,6 +91,7 @@ export type Receipt = {
   disclaimer: string;
   display: {
     orderLabel: string;
+    coverageLabel: string;
     generatedDate: string;
     providerLabel: string;
     stats: ReceiptDisplayRow[];
@@ -118,8 +121,7 @@ export type Analysis = {
   topSignals: WasteSignal[];
   receipt: Receipt;
   share: {
-    x: string;
-    linkedin: string;
+    text: string;
   };
 };
 
@@ -493,7 +495,7 @@ export function analyzeLogs(options: CliOptions): Analysis {
 
 export function writeAnalysis(analysis: Analysis, outDir: string) {
   ensureDir(outDir);
-  ensureDir(join(outDir, "share"));
+  rmSync(join(outDir, "share"), { recursive: true, force: true });
   writeFileSync(
     join(outDir, "analysis.json"),
     JSON.stringify(analysis, null, 2),
@@ -502,11 +504,7 @@ export function writeAnalysis(analysis: Analysis, outDir: string) {
     join(outDir, "receipt.json"),
     JSON.stringify(analysis.receipt, null, 2),
   );
-  writeFileSync(join(outDir, "share", "x.txt"), `${analysis.share.x}\n`);
-  writeFileSync(
-    join(outDir, "share", "linkedin.txt"),
-    `${analysis.share.linkedin}\n`,
-  );
+  writeFileSync(join(outDir, "share.txt"), `${analysis.share.text}\n`);
 }
 
 export function doctor(options: CliOptions) {
@@ -1259,9 +1257,14 @@ function buildReceipt({
     totals,
     apiEquivalentCostUsd,
   });
+  const coverageLabel = buildReceiptCoverageLabel(
+    generatedAt,
+    options.since,
+    totals.sessions,
+  );
 
   return {
-    title: "Your monthly AI bill",
+    title: "Token Receipt",
     subtitle: "officially itemized",
     providerNames,
     totalUsd,
@@ -1282,7 +1285,8 @@ function buildReceipt({
     disclaimer: "satirical estimate based on local agent logs",
     display: {
       orderLabel,
-      generatedDate: formatReceiptDate(generatedAt),
+      coverageLabel,
+      generatedDate: `GENERATED ${formatReceiptDate(generatedAt)}`,
       providerLabel,
       stats: [
         {
@@ -1304,8 +1308,8 @@ function buildReceipt({
           ),
         },
         {
-          label: "Peak spiral",
-          value: buildPeakSpiralLabel(sessions),
+          label: "Longest streak",
+          value: buildLongestStreakLabel(sessions),
         },
       ],
       details: [
@@ -1338,24 +1342,14 @@ function buildShareCopy(receipt: Receipt) {
   const providerLabel = formatProviderList(receipt.providerNames);
 
   return {
-    x: [
-      `I spent $${formatUsd(receipt.totalUsd)} of imaginary agent money this month.`,
+    text: [
+      `My coding-agent bill this month: $${formatUsd(receipt.totalUsd)} of imaginary money.`,
       topWaste ? `Biggest line item: ${topWaste.label}.` : null,
-      `Generated from my local ${providerLabel} logs.`,
+      `Generated from my local ${providerLabel} logs with Token Receipt.`,
       "satirical estimate based on local agent logs",
     ]
       .filter((line): line is string => Boolean(line))
       .join("\n"),
-    linkedin: [
-      `This month my coding-agent bill came out to $${formatUsd(receipt.totalUsd)} in completely unserious but annoyingly plausible expenses.`,
-      topWaste
-        ? `The biggest offender was ${topWaste.label.toLowerCase()}.`
-        : null,
-      `Token Receipt turns local ${providerLabel} logs into a satirical receipt, a thermal-paper PNG, and share-ready copy.`,
-      "satirical estimate based on local agent logs",
-    ]
-      .filter((line): line is string => Boolean(line))
-      .join("\n\n"),
   };
 }
 
@@ -1846,7 +1840,8 @@ function stableStringify(input: unknown): string {
 
 function buildDemoAnalysis(options: CliOptions): Analysis {
   const generatedAt = new Date().toISOString();
-  const providerNames = ["codex", "claude"];
+  const providerNames =
+    options.provider === "all" ? ["codex", "claude"] : [options.provider];
   const totals = {
     sessions: 12,
     inputTokens: 1_285_000,
@@ -1952,17 +1947,59 @@ function formatReceiptDate(value: string) {
     .toUpperCase();
 }
 
-function buildPeakSpiralLabel(sessions: ParsedSession[]) {
-  const peakSession = [...sessions].sort(
-    (left, right) => right.apiEquivalentCostUsd - left.apiEquivalentCostUsd,
-  )[0];
+function buildReceiptCoverageLabel(
+  generatedAt: string,
+  since: string,
+  sessionCount: number,
+) {
+  const { start, end } = buildCoverageWindow(generatedAt, since);
+  const sessionLabel = `${formatCount(sessionCount)} SESSION${sessionCount === 1 ? "" : "S"}`;
 
-  if (!peakSession?.endedAt) return "N/A";
+  return `${sessionLabel} FROM ${formatReceiptShortDate(start)} TO ${formatReceiptShortDate(end)}`;
+}
 
+function formatReceiptShortDate(value: Date) {
   return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(peakSession.endedAt));
+    month: "short",
+    day: "numeric",
+  })
+    .format(value)
+    .toUpperCase();
+}
+
+function buildLongestStreakLabel(sessions: ParsedSession[]) {
+  const activeDays = [
+    ...new Set(
+      sessions
+        .map((session) => resolveSessionDate(session))
+        .filter((date): date is Date => date !== null)
+        .map((date) => startOfLocalDay(date).getTime()),
+    ),
+  ].sort((left, right) => left - right);
+
+  if (!activeDays.length) return "0 days";
+
+  let longest = 1;
+  let current = 1;
+
+  for (let index = 1; index < activeDays.length; index += 1) {
+    const previous = activeDays[index - 1];
+    const next = activeDays[index];
+
+    if (
+      typeof previous === "number" &&
+      typeof next === "number" &&
+      next - previous === 24 * 60 * 60 * 1000
+    ) {
+      current += 1;
+      longest = Math.max(longest, current);
+      continue;
+    }
+
+    current = 1;
+  }
+
+  return `${formatCount(longest)} day${longest === 1 ? "" : "s"}`;
 }
 
 function buildReceiptAuthCode(totals: Analysis["totals"]) {
@@ -1980,71 +2017,90 @@ function buildReceiptActivity(
   since: string,
   sessions: ParsedSession[],
 ): ReceiptActivity {
-  const days = parseSinceDays(since) ?? 30;
-  const end = new Date(generatedAt);
-  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
-  const span = Math.max(1, end.getTime() - start.getTime());
-  const columns = Array.from({ length: 16 }, () => Array(7).fill(0));
-
-  if (!sessions.length) {
-    return {
-      title: "Got Helped",
-      periodLabel: formatPeriodLabel(since),
-      startLabel: formatMonthLabel(start),
-      endLabel: formatMonthLabel(end),
-      columns: columns.map((column, columnIndex) =>
-        column.map((_, rowIndex) =>
-          Math.min(
-            4,
-            Math.max(
-              0,
-              Math.round(
-                2 + Math.sin((columnIndex + 1) * 0.65 + rowIndex * 0.85) * 1.7,
-              ),
-            ),
-          ),
-        ),
-      ),
-    };
-  }
+  const { start, end, days } = buildCoverageWindow(generatedAt, since);
+  const maxRows = 6;
+  const columns = Array.from({ length: days }, () => Array(maxRows).fill(0));
+  const sessionsPerDay = Array(days).fill(0);
 
   sessions.forEach((session) => {
-    if (!session.endedAt) return;
+    const date = resolveSessionDate(session);
 
-    const date = new Date(session.endedAt);
-    const time = date.getTime();
+    if (!date) return;
 
-    if (Number.isNaN(time)) return;
+    const columnIndex = differenceInLocalDays(start, date);
 
-    const columnIndex = Math.min(
-      15,
-      Math.max(0, Math.floor(((time - start.getTime()) / span) * 16)),
-    );
-    const rowIndex = date.getDay();
-    const intensity = Math.min(
-      4,
-      1 +
-        Math.floor(
-          Math.log10(
-            Math.max(10, session.functionCalls + session.outputTokens / 1500),
-          ),
-        ),
-    );
+    if (columnIndex < 0 || columnIndex >= days) return;
 
+    sessionsPerDay[columnIndex] += 1;
+  });
+
+  sessionsPerDay.forEach((count, columnIndex) => {
     const column = columns[columnIndex];
 
     if (!column) return;
 
-    column[rowIndex] = Math.min(4, (column[rowIndex] ?? 0) + intensity);
+    for (let row = 0; row < Math.min(maxRows, count); row += 1) {
+      column[maxRows - 1 - row] = 1;
+    }
   });
 
+  const activeDays = sessionsPerDay.filter((count) => count > 0).length;
+  const maxDailySessions = sessionsPerDay.reduce(
+    (highest, count) => Math.max(highest, count),
+    0,
+  );
+
   return {
-    title: "Got Helped",
-    periodLabel: formatPeriodLabel(since),
-    startLabel: formatMonthLabel(start),
-    endLabel: formatMonthLabel(end),
+    title: "Daily Sessions",
+    periodLabel: `${formatCount(activeDays)} OF ${formatCount(days)} DAYS ACTIVE`,
+    startLabel: formatReceiptShortDate(start),
+    endLabel: formatReceiptShortDate(end),
+    legendLabel:
+      maxDailySessions > maxRows
+        ? `1 FILLED BLOCK = 1 SESSION, TOP ROW = ${maxRows}+`
+        : "1 FILLED BLOCK = 1 SESSION",
     columns,
   };
+}
+
+function buildCoverageWindow(generatedAt: string, since: string) {
+  const end = startOfLocalDay(new Date(generatedAt));
+  const days = parseSinceDays(since) ?? 30;
+  const start = new Date(end);
+  start.setDate(end.getDate() - days + 1);
+
+  return { start, end, days };
+}
+
+function resolveSessionDate(session: ParsedSession) {
+  const value = session.endedAt ?? session.startedAt;
+
+  if (!value) return null;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return startOfLocalDay(date);
+}
+
+function startOfLocalDay(value: Date) {
+  return new Date(
+    value.getFullYear(),
+    value.getMonth(),
+    value.getDate(),
+    0,
+    0,
+    0,
+    0,
+  );
+}
+
+function differenceInLocalDays(start: Date, end: Date) {
+  return Math.round(
+    (startOfLocalDay(end).getTime() - startOfLocalDay(start).getTime()) /
+      (24 * 60 * 60 * 1000),
+  );
 }
 
 function parseSinceDays(since: string) {
@@ -2078,10 +2134,4 @@ function formatPeriodLabel(since: string) {
   }
 
   return since.toUpperCase();
-}
-
-function formatMonthLabel(value: Date) {
-  return new Intl.DateTimeFormat("en-US", { month: "short" })
-    .format(value)
-    .toUpperCase();
 }

@@ -22,6 +22,66 @@ afterAll(() => {
 
 describe("token receipt skill", () => {
   test(
+    "generate.sh defaults to the host agent provider when none is passed",
+    { timeout: 15000 },
+    () => {
+      const runtimeDir = join(repoRoot, "packages", "runtime");
+      const generateScript = join(
+        repoRoot,
+        "skills",
+        "token-receipt",
+        "scripts",
+        "generate.sh",
+      );
+      const workDir = join(tempRoot, "host-workspace");
+      const shimPath = join(tempRoot, "token-receipt-runtime-host");
+      const outDir = join(workDir, "token-receipt-output");
+
+      mkdirSync(workDir, { recursive: true });
+
+      writeFileSync(
+        shimPath,
+        [
+          "#!/bin/bash",
+          "set -euo pipefail",
+          `exec "${process.execPath}" --cwd "${runtimeDir}" ./src/cli.ts "$@"`,
+          "",
+        ].join("\n"),
+      );
+      chmodSync(shimPath, 0o755);
+
+      const result = spawnSync(
+        "bash",
+        [generateScript, "--since", "7d", "--seed", "demo"],
+        {
+          cwd: workDir,
+          env: {
+            ...process.env,
+            CODEX_SHELL: "1",
+            CODEX_THREAD_ID: "test-thread",
+            TOKEN_RECEIPT_DISABLE_OPEN: "1",
+            TOKEN_RECEIPT_RUNTIME_PATH: shimPath,
+          },
+          encoding: "utf8",
+        },
+      );
+
+      expect(result.status).toBe(0);
+      expect(result.stderr).toBe("");
+
+      const stdout = JSON.parse(result.stdout);
+      expect(realpathSync(stdout.outDir)).toBe(realpathSync(outDir));
+
+      const analysis = JSON.parse(
+        readFileSync(join(outDir, "analysis.json"), "utf8"),
+      );
+
+      expect(analysis.options.provider).toBe("codex");
+      expect(analysis.providerNames).toEqual(["codex"]);
+    },
+  );
+
+  test(
     "generate.sh writes the expected artifacts with demo data",
     { timeout: 15000 },
     () => {
@@ -67,6 +127,7 @@ describe("token receipt skill", () => {
           cwd: workDir,
           env: {
             ...process.env,
+            TOKEN_RECEIPT_DISABLE_OPEN: "1",
             TOKEN_RECEIPT_RUNTIME_PATH: shimPath,
           },
           encoding: "utf8",
@@ -81,11 +142,8 @@ describe("token receipt skill", () => {
       expect(realpathSync(stdout.receipt)).toBe(
         realpathSync(join(outDir, "receipt.png")),
       );
-      expect(realpathSync(stdout.x)).toBe(
-        realpathSync(join(outDir, "share", "x.txt")),
-      );
-      expect(realpathSync(stdout.linkedin)).toBe(
-        realpathSync(join(outDir, "share", "linkedin.txt")),
+      expect(realpathSync(stdout.share)).toBe(
+        realpathSync(join(outDir, "share.txt")),
       );
 
       const analysis = JSON.parse(
@@ -110,16 +168,11 @@ describe("token receipt skill", () => {
         join(outDir, "analysis.json"),
         join(outDir, "receipt.json"),
         join(outDir, "receipt.png"),
-        join(outDir, "share", "x.txt"),
-        join(outDir, "share", "linkedin.txt"),
+        join(outDir, "share.txt"),
       ].forEach((path) => expect(existsSync(path)).toBe(true));
 
       expect(
-        readFileSync(join(outDir, "share", "x.txt"), "utf8").trim().length,
-      ).toBeGreaterThan(0);
-      expect(
-        readFileSync(join(outDir, "share", "linkedin.txt"), "utf8").trim()
-          .length,
+        readFileSync(join(outDir, "share.txt"), "utf8").trim().length,
       ).toBeGreaterThan(0);
     },
   );

@@ -57,8 +57,7 @@ try {
         {
           outDir: options.outDir,
           receipt: join(options.outDir, "receipt.png"),
-          x: join(options.outDir, "share", "x.txt"),
-          linkedin: join(options.outDir, "share", "linkedin.txt"),
+          share: join(options.outDir, "share.txt"),
         },
         null,
         2,

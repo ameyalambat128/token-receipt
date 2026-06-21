@@ -15,7 +15,7 @@ import {
 
 const siteUrl = "https://tokenreceipt.ameyalambat.com";
 const productDescription =
-  "Token Receipt turns your Codex, Claude Code, Kiro CLI, and experimental Cursor local session logs into your coding-agent bill with a thermal-paper receipt, share-ready post copy, and skill-native workflows.";
+  "Token Receipt turns your Codex, Claude Code, Kiro CLI, and experimental Cursor local session logs into your coding-agent bill with a thermal-paper receipt, optional share text, and skill-native workflows.";
 
 const structuredData = {
   "@context": "https://schema.org",
@@ -84,7 +84,7 @@ const faqItems = [
     value: "share-loop",
     question: "What makes this shareable?",
     answer:
-      "Each run produces a thermal-paper PNG plus ready-to-edit social copy. The output feels personal because it is derived from your own agent habits, not from a generic meme generator.",
+      "Each run produces a thermal-paper PNG plus a generic share caption you can edit anywhere. The output feels personal because it is derived from your own agent habits, not from a generic meme generator.",
   },
 ];
 
@@ -136,7 +136,7 @@ export default function Home() {
 
           <p className="mt-6 leading-relaxed text-gray-400">
             Token Receipt turns local agent logs into your coding-agent bill
-            with a thermal-paper PNG, share-ready post copy, and a skill-native
+            with a thermal-paper PNG, optional share text, and a skill-native
             flow that works inside the tools people already use.
           </p>
           <p className="mt-4 text-sm text-gray-500">
@@ -232,7 +232,7 @@ export default function Home() {
                 Cursor receipts currently prioritize tool activity over exact
                 spend accounting
               </li>
-              <li>Builds a thermal-paper PNG plus ready-to-edit post copy</li>
+              <li>Builds a thermal-paper PNG plus a generic share caption</li>
               <li>Uses skills so the host agent can write the final roast</li>
             </ul>
           </section>
