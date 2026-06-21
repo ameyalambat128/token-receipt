@@ -13,7 +13,7 @@ const statRows = [
   { label: "Sessions", value: "184" },
   { label: "Tool calls", value: "612" },
   { label: "Tokens burned", value: "1.92M" },
-  { label: "Peak spiral", value: "2:14 AM" },
+  { label: "Longest streak", value: "6 days" },
 ];
 
 const detailRows = [
@@ -21,24 +21,16 @@ const detailRows = [
   { label: "Useful work", value: "$781" },
 ];
 
-const activityGraph = [
-  [0, 0, 0, 1, 0, 0, 0],
-  [0, 1, 0, 2, 0, 0, 0],
-  [0, 0, 0, 1, 0, 0, 0],
-  [0, 0, 2, 3, 1, 0, 0],
-  [0, 1, 3, 2, 1, 0, 0],
-  [0, 0, 0, 2, 0, 0, 0],
-  [0, 0, 1, 0, 0, 0, 0],
-  [0, 2, 3, 3, 2, 0, 0],
-  [0, 1, 2, 4, 1, 0, 0],
-  [0, 1, 3, 2, 2, 1, 0],
-  [0, 0, 2, 2, 3, 1, 0],
-  [1, 2, 2, 3, 2, 1, 0],
-  [0, 1, 3, 2, 2, 0, 0],
-  [0, 0, 2, 4, 2, 1, 0],
-  [1, 2, 2, 3, 1, 1, 0],
-  [0, 1, 3, 2, 1, 0, 0],
+const activityCounts = [
+  0, 1, 0, 0, 2, 1, 0, 0, 1, 2, 0, 3, 1, 0, 0, 1, 0, 2, 1, 4, 2, 1, 0, 3, 2, 5,
+  1, 3, 2, 4,
 ];
+
+const activityGraph = activityCounts.map((count) =>
+  Array.from({ length: 6 }, (_, rowIndex) =>
+    rowIndex >= 6 - Math.min(6, count) ? 1 : 0,
+  ),
+);
 
 const formatActivityOpacity = (value: number) =>
   String((0.08 + Math.max(0, Math.min(1, value)) * 0.88).toFixed(2));
@@ -221,34 +213,31 @@ export function ProofStrip() {
 
             <motion.div
               variants={itemVariants}
-              className="mx-auto mt-7 flex w-full max-w-[14.5rem] flex-col items-center px-1 sm:max-w-[16.5rem] sm:px-0"
+              className="mx-auto mt-7 flex w-full max-w-[19.5rem] flex-col items-center px-1 sm:px-0"
             >
-              <div className="mb-3 flex w-full items-center justify-between gap-3 text-[0.76rem] uppercase tracking-[0.2em] text-stone-700">
-                <span>Got Helped</span>
-                <span>Last 30d</span>
+              <div className="mb-3 flex w-full items-center justify-between gap-4 text-[0.72rem] uppercase tracking-[0.18em] text-stone-700 sm:text-[0.76rem] sm:tracking-[0.2em]">
+                <span>Daily Sessions</span>
+                <span>18 of 30 days active</span>
               </div>
-              <div
-                className="flex items-end gap-[3px] sm:gap-[4px]"
-                aria-hidden="true"
-              >
+              <div className="flex items-end gap-[2px]" aria-hidden="true">
                 {activityGraph.map((column, columnIndex) => (
-                  <div
-                    key={columnIndex}
-                    className="grid gap-[3px] sm:gap-[4px]"
-                  >
+                  <div key={columnIndex} className="grid gap-[2px]">
                     {column.map((value, rowIndex) => (
                       <span
                         key={`${columnIndex}-${rowIndex}`}
-                        className="block h-[8px] w-[8px] rounded-[2px] bg-black sm:h-[10px] sm:w-[10px]"
-                        style={{ opacity: formatActivityOpacity(value / 4) }}
+                        className="block h-[6px] w-[6px] rounded-[1.5px] bg-black"
+                        style={{ opacity: formatActivityOpacity(value) }}
                       />
                     ))}
                   </div>
                 ))}
               </div>
               <div className="mt-3 flex w-full items-center justify-between text-[0.72rem] uppercase tracking-[0.18em] text-stone-500">
-                <span>May</span>
-                <span>Jun</span>
+                <span>May 22</span>
+                <span>Jun 20</span>
+              </div>
+              <div className="mt-2 text-center text-[0.62rem] uppercase tracking-[0.12em] text-stone-400">
+                1 filled block = 1 session
               </div>
             </motion.div>
 

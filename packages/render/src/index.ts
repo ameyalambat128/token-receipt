@@ -276,7 +276,8 @@ export function renderReceiptHtml(receipt: Receipt) {
         display: flex;
         flex-direction: column;
         align-items: center;
-        width: 264px;
+        width: 312px;
+        max-width: 100%;
         margin: 28px auto 0;
         padding: 0 4px;
       }
@@ -286,6 +287,7 @@ export function renderReceiptHtml(receipt: Receipt) {
         display: flex;
         align-items: center;
         justify-content: space-between;
+        gap: 12px;
         width: 100%;
         color: #44403c;
         font-size: 12px;
@@ -297,20 +299,20 @@ export function renderReceiptHtml(receipt: Receipt) {
       .activity-grid {
         display: flex;
         align-items: end;
-        gap: 4px;
+        gap: 2px;
         margin-top: 12px;
       }
 
       .activity-column {
         display: grid;
-        gap: 4px;
+        gap: 2px;
       }
 
       .activity-cell {
         display: block;
-        width: 10px;
-        height: 10px;
-        border-radius: 2px;
+        width: 6px;
+        height: 6px;
+        border-radius: 1.5px;
         background: #000;
       }
 
@@ -319,6 +321,16 @@ export function renderReceiptHtml(receipt: Receipt) {
         color: #78716c;
         font-size: 11px;
         letter-spacing: 0.18em;
+      }
+
+      .activity-legend {
+        margin-top: 8px;
+        color: #8a8176;
+        font-size: 10px;
+        letter-spacing: 0.12em;
+        line-height: 1.4;
+        text-align: center;
+        text-transform: uppercase;
       }
 
       .note {
@@ -436,6 +448,7 @@ export function renderReceiptHtml(receipt: Receipt) {
               <span>${escapeHtml(receipt.display.activity.startLabel)}</span>
               <span>${escapeHtml(receipt.display.activity.endLabel)}</span>
             </div>
+            <div class="activity-legend">${escapeHtml(receipt.display.activity.legendLabel)}</div>
           </section>
 
           <section class="note">

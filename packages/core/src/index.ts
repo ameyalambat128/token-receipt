@@ -73,6 +73,7 @@ export type ReceiptActivity = {
   periodLabel: string;
   startLabel: string;
   endLabel: string;
+  legendLabel: string;
   columns: number[][];
 };
 
@@ -1307,8 +1308,8 @@ function buildReceipt({
           ),
         },
         {
-          label: "Peak spiral",
-          value: buildPeakSpiralLabel(sessions),
+          label: "Longest streak",
+          value: buildLongestStreakLabel(sessions),
         },
       ],
       details: [
@@ -1951,9 +1952,7 @@ function buildReceiptCoverageLabel(
   since: string,
   sessionCount: number,
 ) {
-  const days = parseSinceDays(since) ?? 30;
-  const end = new Date(generatedAt);
-  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+  const { start, end } = buildCoverageWindow(generatedAt, since);
   const sessionLabel = `${formatCount(sessionCount)} SESSION${sessionCount === 1 ? "" : "S"}`;
 
   return `${sessionLabel} FROM ${formatReceiptShortDate(start)} TO ${formatReceiptShortDate(end)}`;
@@ -1968,17 +1967,39 @@ function formatReceiptShortDate(value: Date) {
     .toUpperCase();
 }
 
-function buildPeakSpiralLabel(sessions: ParsedSession[]) {
-  const peakSession = [...sessions].sort(
-    (left, right) => right.apiEquivalentCostUsd - left.apiEquivalentCostUsd,
-  )[0];
+function buildLongestStreakLabel(sessions: ParsedSession[]) {
+  const activeDays = [
+    ...new Set(
+      sessions
+        .map((session) => resolveSessionDate(session))
+        .filter((date): date is Date => date !== null)
+        .map((date) => startOfLocalDay(date).getTime()),
+    ),
+  ].sort((left, right) => left - right);
 
-  if (!peakSession?.endedAt) return "N/A";
+  if (!activeDays.length) return "0 days";
 
-  return new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(peakSession.endedAt));
+  let longest = 1;
+  let current = 1;
+
+  for (let index = 1; index < activeDays.length; index += 1) {
+    const previous = activeDays[index - 1];
+    const next = activeDays[index];
+
+    if (
+      typeof previous === "number" &&
+      typeof next === "number" &&
+      next - previous === 24 * 60 * 60 * 1000
+    ) {
+      current += 1;
+      longest = Math.max(longest, current);
+      continue;
+    }
+
+    current = 1;
+  }
+
+  return `${formatCount(longest)} day${longest === 1 ? "" : "s"}`;
 }
 
 function buildReceiptAuthCode(totals: Analysis["totals"]) {
@@ -1996,85 +2017,90 @@ function buildReceiptActivity(
   since: string,
   sessions: ParsedSession[],
 ): ReceiptActivity {
-  const days = parseSinceDays(since) ?? 30;
-  const end = new Date(generatedAt);
-  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
-  const span = Math.max(1, end.getTime() - start.getTime());
-  const columns = Array.from({ length: 16 }, () => Array(7).fill(0));
-
-  if (!sessions.length) {
-    return {
-      title: "Got Helped",
-      periodLabel: formatPeriodLabel(since),
-      startLabel: formatMonthLabel(start),
-      endLabel: formatMonthLabel(end),
-      columns: columns.map((column, columnIndex) =>
-        column.map((_, rowIndex) =>
-          Math.max(
-            0,
-            Math.min(
-              1,
-              0.14 +
-                (Math.sin((columnIndex + 1) * 0.65 + rowIndex * 0.85) + 1) *
-                  0.18,
-            ),
-          ),
-        ),
-      ),
-    };
-  }
+  const { start, end, days } = buildCoverageWindow(generatedAt, since);
+  const maxRows = 6;
+  const columns = Array.from({ length: days }, () => Array(maxRows).fill(0));
+  const sessionsPerDay = Array(days).fill(0);
 
   sessions.forEach((session) => {
-    if (!session.endedAt) return;
+    const date = resolveSessionDate(session);
 
-    const date = new Date(session.endedAt);
-    const time = date.getTime();
+    if (!date) return;
 
-    if (Number.isNaN(time)) return;
+    const columnIndex = differenceInLocalDays(start, date);
 
-    const columnIndex = Math.min(
-      15,
-      Math.max(0, Math.floor(((time - start.getTime()) / span) * 16)),
-    );
-    const rowIndex = date.getDay();
-    const intensity = Math.log1p(
-      session.functionCalls * 3 +
-        session.outputTokens / 900 +
-        session.cachedInputTokens / 400_000 +
-        session.reasoningTokens / 500,
-    );
+    if (columnIndex < 0 || columnIndex >= days) return;
 
+    sessionsPerDay[columnIndex] += 1;
+  });
+
+  sessionsPerDay.forEach((count, columnIndex) => {
     const column = columns[columnIndex];
 
     if (!column) return;
 
-    column[rowIndex] = (column[rowIndex] ?? 0) + intensity;
+    for (let row = 0; row < Math.min(maxRows, count); row += 1) {
+      column[maxRows - 1 - row] = 1;
+    }
   });
 
-  const nonZeroCells = columns.flat().filter((value) => value > 0);
-  const minCell = Math.min(...nonZeroCells);
-  const maxCell = Math.max(...nonZeroCells);
-  const normalizedColumns =
-    nonZeroCells.length === 0
-      ? columns
-      : columns.map((column) =>
-          column.map((value) => {
-            if (value <= 0) return 0;
-            if (maxCell === minCell) return 1;
-            return Math.max(
-              0.12,
-              Math.min(1, (value - minCell) / (maxCell - minCell)),
-            );
-          }),
-        );
+  const activeDays = sessionsPerDay.filter((count) => count > 0).length;
+  const maxDailySessions = sessionsPerDay.reduce(
+    (highest, count) => Math.max(highest, count),
+    0,
+  );
 
   return {
-    title: "Got Helped",
-    periodLabel: formatPeriodLabel(since),
-    startLabel: formatMonthLabel(start),
-    endLabel: formatMonthLabel(end),
-    columns: normalizedColumns,
+    title: "Daily Sessions",
+    periodLabel: `${formatCount(activeDays)} OF ${formatCount(days)} DAYS ACTIVE`,
+    startLabel: formatReceiptShortDate(start),
+    endLabel: formatReceiptShortDate(end),
+    legendLabel:
+      maxDailySessions > maxRows
+        ? `1 FILLED BLOCK = 1 SESSION, TOP ROW = ${maxRows}+`
+        : "1 FILLED BLOCK = 1 SESSION",
+    columns,
   };
+}
+
+function buildCoverageWindow(generatedAt: string, since: string) {
+  const end = startOfLocalDay(new Date(generatedAt));
+  const days = parseSinceDays(since) ?? 30;
+  const start = new Date(end);
+  start.setDate(end.getDate() - days + 1);
+
+  return { start, end, days };
+}
+
+function resolveSessionDate(session: ParsedSession) {
+  const value = session.endedAt ?? session.startedAt;
+
+  if (!value) return null;
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return null;
+
+  return startOfLocalDay(date);
+}
+
+function startOfLocalDay(value: Date) {
+  return new Date(
+    value.getFullYear(),
+    value.getMonth(),
+    value.getDate(),
+    0,
+    0,
+    0,
+    0,
+  );
+}
+
+function differenceInLocalDays(start: Date, end: Date) {
+  return Math.round(
+    (startOfLocalDay(end).getTime() - startOfLocalDay(start).getTime()) /
+      (24 * 60 * 60 * 1000),
+  );
 }
 
 function parseSinceDays(since: string) {
@@ -2108,10 +2134,4 @@ function formatPeriodLabel(since: string) {
   }
 
   return since.toUpperCase();
-}
-
-function formatMonthLabel(value: Date) {
-  return new Intl.DateTimeFormat("en-US", { month: "short" })
-    .format(value)
-    .toUpperCase();
 }
