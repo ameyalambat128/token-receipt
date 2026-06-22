@@ -27,10 +27,10 @@ export function CopyButton({ text }: { text: string }) {
     <button
       type="button"
       onClick={handleCopy}
-      className="rounded p-3 text-gray-600 transition-colors hover:bg-neutral-800 hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400"
+      className="shrink-0 rounded-md p-2 text-neutral-500 transition-colors hover:bg-neutral-800 hover:text-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500"
       aria-label="Copy to clipboard"
     >
-      {copied ? <CheckIcon /> : <CopyIcon />}
+      {copied ? <CheckIcon size={18} /> : <CopyIcon size={18} />}
     </button>
   );
 }
