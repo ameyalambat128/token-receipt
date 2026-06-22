@@ -82,4 +82,31 @@ function CheckIcon({ size = 16, ...props }: IconProps) {
   );
 }
 
-export { CheckIcon, CopyIcon, GitHubIcon, StarIcon, XIcon, type IconProps };
+function ChevronDownIcon({ size = 16, ...props }: IconProps) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      {...props}
+    >
+      <polyline points="6 9 12 15 18 9" />
+    </svg>
+  );
+}
+
+export {
+  CheckIcon,
+  ChevronDownIcon,
+  CopyIcon,
+  GitHubIcon,
+  StarIcon,
+  XIcon,
+  type IconProps,
+};

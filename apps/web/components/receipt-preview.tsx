@@ -21,21 +21,7 @@ const detailRows = [
   { label: "Useful work", value: "$781" },
 ];
 
-const activityCounts = [
-  0, 1, 0, 0, 2, 1, 0, 0, 1, 2, 0, 3, 1, 0, 0, 1, 0, 2, 1, 4, 2, 1, 0, 3, 2, 5,
-  1, 3, 2, 4,
-];
-
-const activityGraph = activityCounts.map((count) =>
-  Array.from({ length: 6 }, (_, rowIndex) =>
-    rowIndex >= 6 - Math.min(6, count) ? 1 : 0,
-  ),
-);
-
-const formatActivityOpacity = (value: number) =>
-  String((0.08 + Math.max(0, Math.min(1, value)) * 0.88).toFixed(2));
-
-export function ProofStrip() {
+export function ReceiptPreview() {
   const prefersReducedMotion = useReducedMotion();
 
   const sectionVariants: Variants = prefersReducedMotion
@@ -51,7 +37,7 @@ export function ProofStrip() {
           transition: {
             duration: 0.52,
             ease: [0.16, 1, 0.3, 1],
-            staggerChildren: 0.08,
+            staggerChildren: 0.07,
           },
         },
       };
@@ -72,37 +58,27 @@ export function ProofStrip() {
       };
 
   return (
-    <motion.section
-      className="mt-8"
+    <motion.div
+      className="relative mx-auto w-full max-w-[32rem]"
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, amount: 0.25 }}
+      animate="visible"
       variants={sectionVariants}
       aria-label="Example receipt"
     >
-      <motion.div variants={itemVariants} className="mb-4">
-        <p className="text-[11px] uppercase tracking-[0.28em] text-neutral-500">
-          Example output
-        </p>
-      </motion.div>
+      <div className="pointer-events-none absolute inset-x-8 top-5 h-24 rounded-full bg-white/8 blur-3xl" />
 
-      <motion.div
-        variants={itemVariants}
-        className="relative mx-auto w-full max-w-[34rem] px-2 sm:px-0"
+      <div
+        className="relative overflow-hidden"
+        style={{
+          maxHeight: "820px",
+          maskImage: "linear-gradient(to bottom, black 88%, transparent 100%)",
+          WebkitMaskImage:
+            "linear-gradient(to bottom, black 88%, transparent 100%)",
+        }}
       >
-        <div className="pointer-events-none absolute inset-x-8 top-5 h-24 rounded-full bg-white/8 blur-3xl" />
-        <div className="pointer-events-none absolute inset-x-10 -bottom-6 h-16 rounded-full bg-black/35 blur-2xl" />
-
         <motion.div
-          whileHover={
-            prefersReducedMotion
-              ? undefined
-              : {
-                  y: -8,
-                  rotate: -1.2,
-                  transition: { duration: 0.24, ease: [0.16, 1, 0.3, 1] },
-                }
-          }
+          whileHover={prefersReducedMotion ? undefined : { y: -6 }}
+          transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
           className="relative overflow-hidden rounded-[2rem] border border-stone-300/70 bg-[#f5f1e8] px-4 pb-8 pt-7 text-[#1f1b17] shadow-[0_30px_80px_rgba(0,0,0,0.28)] sm:px-6"
           style={{
             backgroundImage: [
@@ -122,7 +98,6 @@ export function ProofStrip() {
           </div>
 
           <div className="pointer-events-none absolute inset-x-0 top-0 h-4 bg-[radial-gradient(circle_at_10px_0px,transparent_0_8px,#f5f1e8_8.5px)] bg-[length:22px_16px] bg-repeat-x opacity-80" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 h-4 rotate-180 bg-[radial-gradient(circle_at_10px_0px,transparent_0_8px,#f5f1e8_8.5px)] bg-[length:22px_16px] bg-repeat-x opacity-80" />
 
           <div className="relative z-10 font-mono">
             <motion.div variants={itemVariants} className="text-center">
@@ -133,7 +108,7 @@ export function ProofStrip() {
                 Officially Itemized
               </p>
               <p className="mt-3 text-[0.72rem] uppercase tracking-[0.18em] text-stone-500 sm:text-[0.78rem]">
-                Codex + Claude Code + Kiro CLI + Cursor Experimental
+                Codex + Claude Code + Kiro CLI + Cursor<sup>*</sup>
               </p>
             </motion.div>
 
@@ -210,51 +185,9 @@ export function ProofStrip() {
                 THANK YOU FOR PROMPTING
               </p>
             </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              className="mx-auto mt-7 flex w-full max-w-[19.5rem] flex-col items-center px-1 sm:px-0"
-            >
-              <div className="mb-3 flex w-full items-center justify-between gap-4 text-[0.72rem] uppercase tracking-[0.18em] text-stone-700 sm:text-[0.76rem] sm:tracking-[0.2em]">
-                <span>Daily Sessions</span>
-                <span>18 of 30 days active</span>
-              </div>
-              <div className="flex items-end gap-[2px]" aria-hidden="true">
-                {activityGraph.map((column, columnIndex) => (
-                  <div key={columnIndex} className="grid gap-[2px]">
-                    {column.map((value, rowIndex) => (
-                      <span
-                        key={`${columnIndex}-${rowIndex}`}
-                        className="block h-[6px] w-[6px] rounded-[1.5px] bg-black"
-                        style={{ opacity: formatActivityOpacity(value) }}
-                      />
-                    ))}
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 flex w-full items-center justify-between text-[0.72rem] uppercase tracking-[0.18em] text-stone-500">
-                <span>May 22</span>
-                <span>Jun 20</span>
-              </div>
-              <div className="mt-2 text-center text-[0.62rem] uppercase tracking-[0.12em] text-stone-400">
-                1 filled block = 1 session
-              </div>
-            </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              className="mt-4 text-center text-[0.82rem] leading-5 text-stone-500"
-            >
-              <p className="uppercase tracking-[0.22em]">
-                generated from local agent logs
-              </p>
-              <p className="mt-1 tracking-[0.08em]">
-                skills.sh/ameyalambat128/token-receipt
-              </p>
-            </motion.div>
           </div>
         </motion.div>
-      </motion.div>
-    </motion.section>
+      </div>
+    </motion.div>
   );
 }
