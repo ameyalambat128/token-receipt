@@ -40,11 +40,7 @@ export function CommandPanel({
 }: CommandPanelProps) {
   const box = (
     <div className="group flex items-center gap-3 overflow-hidden rounded-2xl border border-neutral-800 bg-neutral-900/40 px-4 py-4 transition-colors duration-200 hover:border-neutral-700 hover:bg-neutral-900/60 sm:px-5">
-      <code
-        className={`min-w-0 flex-1 font-mono text-sm leading-7 text-neutral-200 sm:text-[0.95rem] ${
-          shell ? "overflow-x-auto whitespace-nowrap" : "whitespace-pre-wrap"
-        }`}
-      >
+      <code className="min-w-0 flex-1 whitespace-pre-wrap break-words font-mono text-sm leading-7 text-neutral-200 sm:text-[0.95rem]">
         {renderCommand(command, shell)}
       </code>
       <CopyButton text={command} />
