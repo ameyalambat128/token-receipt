@@ -93,20 +93,10 @@ function Divider() {
 export default async function Home() {
   const installCommand =
     "npx skills add ameyalambat128/token-receipt --skill token-receipt";
-  const repoInstallCommand = "bun install && bun run skill:install";
   const codexPrompt =
     "/token-receipt Generate a receipt for my last 30 days of agent usage.";
   const claudePrompt =
     "/token-receipt Generate a receipt for my last 30 days of Codex, Claude Code, Kiro CLI, and Cursor usage.";
-  const doctorCommand = "bun run -F token-receipt doctor";
-  const runtimeCommand =
-    "bun run -F token-receipt generate -- --provider all --since 30d --out ./token-receipt-output";
-  const installItems = [
-    { label: "skill", command: installCommand },
-    { label: "repo", command: repoInstallCommand },
-    { label: "doctor", command: doctorCommand },
-    { label: "runtime", command: runtimeCommand },
-  ];
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -141,16 +131,16 @@ export default async function Home() {
             Skill-first. Local-first. No extra model API in v1.
           </p>
 
-          <h2 className="gradient-text mb-4 mt-16 text-xl font-bold">
+          <h2 className="gradient-text mb-4 mt-16 text-xl font-bold tracking-tight">
             Install Token Receipt
           </h2>
-          <InstallCommandPanel items={installItems} />
+          <InstallCommandPanel command={installCommand} />
           <ProofStrip />
         </header>
 
         <main className="space-y-12">
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               Codex support
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
@@ -159,15 +149,17 @@ export default async function Home() {
               skill calls the local runtime, reads the structured analysis, and
               then lets Codex write the final response in-session.
             </p>
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-5 ring-1 ring-neutral-900">
-              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">
-                Codex prompt
-              </p>
-              <div className="mt-3 flex items-center justify-between gap-4">
-                <div className="overflow-x-auto text-sm font-mono text-gray-400">
-                  {codexPrompt}
+            <div className="overflow-hidden rounded-[1.75rem] border border-neutral-800 bg-neutral-900/90 shadow-[0_20px_50px_rgba(0,0,0,0.16)] ring-1 ring-neutral-800/80">
+              <div className="px-5 pb-5 pt-7 sm:px-7 sm:pb-7 sm:pt-8">
+                <p className="text-sm font-medium text-neutral-500">
+                  Codex prompt
+                </p>
+                <div className="mt-5 flex items-center gap-3">
+                  <div className="min-w-0 flex-1 overflow-x-auto font-mono text-sm leading-7 text-neutral-400 sm:text-[1.02rem]">
+                    {codexPrompt}
+                  </div>
+                  <CopyButton text={codexPrompt} />
                 </div>
-                <CopyButton text={codexPrompt} />
               </div>
             </div>
           </section>
@@ -175,7 +167,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               Claude Code support
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
@@ -184,15 +176,17 @@ export default async function Home() {
               final response using your existing session instead of a separate
               API key.
             </p>
-            <div className="rounded-2xl border border-neutral-800 bg-neutral-950/60 p-5 ring-1 ring-neutral-900">
-              <p className="text-xs uppercase tracking-[0.22em] text-gray-500">
-                Claude Code prompt
-              </p>
-              <div className="mt-3 flex items-center justify-between gap-4">
-                <div className="overflow-x-auto text-sm font-mono text-gray-400">
-                  {claudePrompt}
+            <div className="overflow-hidden rounded-[1.75rem] border border-neutral-800 bg-neutral-900/90 shadow-[0_20px_50px_rgba(0,0,0,0.16)] ring-1 ring-neutral-800/80">
+              <div className="px-5 pb-5 pt-7 sm:px-7 sm:pb-7 sm:pt-8">
+                <p className="text-sm font-medium text-neutral-500">
+                  Claude Code prompt
+                </p>
+                <div className="mt-5 flex items-center gap-3">
+                  <div className="min-w-0 flex-1 overflow-x-auto font-mono text-sm leading-7 text-neutral-400 sm:text-[1.02rem]">
+                    {claudePrompt}
+                  </div>
+                  <CopyButton text={claudePrompt} />
                 </div>
-                <CopyButton text={claudePrompt} />
               </div>
             </div>
           </section>
@@ -200,7 +194,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               What is Token Receipt?
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
@@ -238,7 +232,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               Kiro CLI session support
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
@@ -257,7 +251,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               Experimental Cursor local support
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
@@ -276,7 +270,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               Why this exists
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
@@ -296,7 +290,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               What it itemizes
             </h2>
             <p className="mb-4 leading-relaxed text-gray-400">
@@ -326,7 +320,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               How it works
             </h2>
             <p className="mb-6 leading-relaxed text-gray-400">
@@ -363,7 +357,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               Who this is for
             </h2>
             <ul className="list-inside list-disc space-y-1 text-gray-400">
@@ -381,7 +375,7 @@ export default async function Home() {
           <Divider />
 
           <section>
-            <h2 className="gradient-text mb-4 text-xl font-bold">
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
               Open source
             </h2>
             <p className="mb-6 leading-relaxed text-gray-400">
@@ -402,7 +396,9 @@ export default async function Home() {
           <Divider />
 
           <section className="pb-24">
-            <h2 className="gradient-text mb-4 text-xl font-bold">FAQ</h2>
+            <h2 className="gradient-text mb-4 text-xl font-bold tracking-tight">
+              FAQ
+            </h2>
             <Accordion className="rounded-2xl border border-neutral-800 bg-neutral-950/60 px-5 ring-1 ring-neutral-900">
               {faqItems.map((item) => (
                 <AccordionItem key={item.value} value={item.value}>
