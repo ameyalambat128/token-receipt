@@ -1,7 +1,5 @@
-"use client";
-
 import Link from "next/link";
-import { GitHubStars } from "@/components/github-stars";
+import { GitHubMetricsStrip } from "@/components/github-metrics-strip";
 import { CopyButton } from "@/components/copy-button";
 import { InstallCommandPanel } from "@/components/install-command-panel";
 import { GitHubIcon, XIcon } from "@/components/icons";
@@ -92,7 +90,7 @@ function Divider() {
   return <hr className="h-1 w-full rounded border-0 bg-neutral-800" />;
 }
 
-export default function Home() {
+export default async function Home() {
   const installCommand =
     "npx skills add ameyalambat128/token-receipt --skill token-receipt";
   const repoInstallCommand = "bun install && bun run skill:install";
@@ -124,7 +122,7 @@ export default function Home() {
             <h1 className="gradient-text text-3xl font-bold tracking-tight">
               /token-receipt
             </h1>
-            <GitHubStars />
+            <GitHubMetricsStrip />
           </div>
 
           <p className="mt-4 text-lg text-gray-100">
