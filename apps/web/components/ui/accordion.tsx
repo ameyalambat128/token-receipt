@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { ChevronDownIcon } from "@/components/icons";
 import { cn } from "@/lib/utils";
 
 type AccordionContextValue = {
+  value: string;
   isOpen: boolean;
   toggle: () => void;
 };
@@ -30,6 +32,7 @@ export function Accordion({
         <AccordionContext.Provider
           key={item.props.value}
           value={{
+            value: item.props.value,
             isOpen: openValue === item.props.value,
             toggle: () =>
               setOpenValue((current) =>
@@ -53,7 +56,11 @@ export function AccordionItem({
   children: React.ReactNode;
 }) {
   return (
-    <div className={cn("border-b last:border-b-0", className)}>{children}</div>
+    <div
+      className={cn("border-b border-neutral-800 last:border-b-0", className)}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -72,20 +79,22 @@ export function AccordionTrigger({
     <button
       type="button"
       onClick={context.toggle}
+      aria-expanded={context.isOpen}
+      aria-controls={`accordion-panel-${context.value}`}
+      id={`accordion-trigger-${context.value}`}
       className={cn(
-        "flex w-full items-start justify-between gap-4 rounded-md py-4 text-left text-sm font-medium transition-all hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-400",
+        "flex w-full items-center justify-between gap-4 py-5 text-left text-[0.95rem] font-medium text-gray-200 transition-colors hover:text-white focus-visible:rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-500",
         className,
       )}
     >
       <span>{children}</span>
-      <span
+      <ChevronDownIcon
+        size={18}
         className={cn(
-          "text-muted-foreground transition-transform duration-200",
-          context.isOpen && "rotate-180",
+          "shrink-0 text-neutral-500 transition-transform duration-300 ease-out",
+          context.isOpen && "-rotate-180 text-neutral-300",
         )}
-      >
-        ˅
-      </span>
+      />
     </button>
   );
 }
@@ -99,7 +108,23 @@ export function AccordionContent({
 }) {
   const context = React.useContext(AccordionContext);
 
-  if (!context || !context.isOpen) return null;
+  if (!context) return null;
 
-  return <div className={cn("pb-4 pt-0 text-sm", className)}>{children}</div>;
+  return (
+    <div
+      id={`accordion-panel-${context.value}`}
+      role="region"
+      aria-labelledby={`accordion-trigger-${context.value}`}
+      className={cn(
+        "grid transition-all duration-300 ease-out",
+        context.isOpen
+          ? "grid-rows-[1fr] opacity-100"
+          : "grid-rows-[0fr] opacity-0",
+      )}
+    >
+      <div className="overflow-hidden">
+        <div className={cn("pb-5 pr-10 text-sm", className)}>{children}</div>
+      </div>
+    </div>
+  );
 }
