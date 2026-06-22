@@ -108,7 +108,7 @@ export function ReceiptPreview() {
                 Officially Itemized
               </p>
               <p className="mt-3 text-[0.72rem] uppercase tracking-[0.18em] text-stone-500 sm:text-[0.78rem]">
-                Codex + Claude Code + Kiro CLI + Cursor<sup>*</sup>
+                Codex + Claude Code + Cursor<sup>*</sup>
               </p>
             </motion.div>
 
